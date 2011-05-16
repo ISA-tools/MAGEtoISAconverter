@@ -7,6 +7,7 @@ import java.io.*;
 import au.com.bytecode.opencsv.CSVReader;
 import org.isatools.io.FileType;
 import org.isatools.io.Loader;
+import org.isatools.magetoisatab.utils.Column;
 import org.isatools.magetoisatab.utils.ProtocolREFUtil;
 
 import javax.xml.bind.SchemaOutputResolver;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.*;
 import java.lang.*;
 
+import org.isatools.magetoisatab.utils.Utils;
 import org.isatools.manipulator.SpreadsheetManipulation;
 
 /**
@@ -83,27 +85,53 @@ public class MAGETabSDRFLoader {
                 String[] columnNames = manipulation.getColumnHeaders(sheetData);
 
                 // initialization of the ArrayList which will receive all fields to be removed
-                ArrayList<Integer> positions2keep = new ArrayList<Integer>();
+                List<Integer> positions2keep = new ArrayList<Integer>();
 
                 // now checking which fields need dropping and adding them to the ArrayList
-                for (int columnIndex = 0; columnIndex < columnNames.length - 1; columnIndex++) {
+                for (int columnIndex = 0; columnIndex < columnNames.length; columnIndex++) {
 
-                    // we don't this
-                    if ((columnNames[columnIndex].equalsIgnoreCase("term source ref"))
-                            && (columnNames[columnIndex - 1].equalsIgnoreCase("protocol ref"))) {
-                        System.out.println("dodgy term source REF found at:" + columnIndex);
+                    if (!columnNames[columnIndex].trim().equals("")) {
 
+                        // we don't this
+                        if (!((columnNames[columnIndex].equalsIgnoreCase("term source ref"))
+                                && (columnNames[columnIndex - 1].equalsIgnoreCase("protocol ref")))) {
 
-                    }
-                    // but we keep the rest
-                    else {
-                        positions2keep.add(columnIndex);
+                            positions2keep.add(columnIndex);
+                        }
                     }
                 }
 
 
+
+//                    if (columnNames[value].equalsIgnoreCase("label")) {
+//                        labelPosition = value;
+//                    }
+//
+
+
+                sheetData = manipulation.getColumnSubset(sheetData, true, convertIntegers(positions2keep));
+                columnNames = manipulation.getColumnHeaders(sheetData);
+
+                LinkedList<Column> columnOrders = Utils.createColumnOrderList(columnNames);
+
+                int assayNameIndex = Utils.getIndexForValue("Assay Name", columnOrders);
+
+                Column technology = columnOrders.remove(Utils.getIndexForValue("technology type", columnOrders));
+                columnOrders.add(assayNameIndex, technology);
+
+                Column platformTitle = columnOrders.remove(Utils.getIndexForValue("comment [platform_title]", columnOrders));
+                columnOrders.add(assayNameIndex + 1, platformTitle);
+
+                System.out.println("Reordered columns");
+
+                for (Column column : columnOrders) {
+                    System.out.println("\t" + column.getIndex() + " - " + column.getLabel());
+                }
+
+
                 // calling the getColumnSubset method and create a object containing the SDRF data bar all fields such as Term Source REF following a Protocol REF
-                List<String[]> sheetDataSubset = manipulation.getColumnSubset(sheetData, true, convertIntegers(positions2keep));
+                List<String[]> sheetDataSubset = manipulation.getColumnSubset(sheetData, true, Utils.createIndexArray(columnOrders));
+
 
                 // now preparing to process the cleaned SDRF subset and remove all aberrant Protocol REF fields where applicable
                 //we initialize
@@ -115,7 +143,7 @@ public class MAGETabSDRFLoader {
 
                 System.out.println("After processing, sheetDataSubset is of size " + sheetDataSubset.size());
 
-                for (String[] columnValues : sheetDataSubset){
+                for (String[] columnValues : sheetDataSubset) {
                     for (String columnValue : columnValues) {
                         System.out.print(columnValue + "\t");
                     }
@@ -271,7 +299,7 @@ public class MAGETabSDRFLoader {
 
                         if (nextLine.length - firstNodePosition > 0) {
 
-                            assayRecord = new String[nextLine.length - firstNodePosition + 2];
+                            assayRecord = new String[nextLine.length - firstNodePosition + 1];
 
 
                             for (int j = 0; j < nextLine.length; j++) {
@@ -443,7 +471,7 @@ public class MAGETabSDRFLoader {
             String studyAssayHeaders = "";
 
             if (studySamplePosition > 0) {
-                //int k = 0;
+
                 studyAssayHeaders = columnNames[studySamplePosition] + "\t";
 
                 for (int c = 0; c < columnNames.length; c++) {
@@ -467,10 +495,13 @@ public class MAGETabSDRFLoader {
                 }
             } else {
 
-                //int k = 0;
                 studyAssayHeaders = "Sample Name" + "\t";
 
+
                 if (columnNames != null) {
+
+                    int column2dropIndex = 0;
+
                     for (int c = 0; c < columnNames.length; c++) {
                         if (c == 0) {
                             studySampleHeaders += columnNames[c] + "\t";
@@ -500,16 +531,19 @@ public class MAGETabSDRFLoader {
                             //Here we deal with unnecessary Material Node by MAGE-TAB
                             if ((columnNames[c].equalsIgnoreCase("Labeled Extract Name"))) {
                                 System.out.println("unnecessary Term Source REF found at " + c);
-                                columns2drop.add(c - firstNodePosition);
-                                //k++;
-                                c = c + 1;
+
+                                columnNames[c] = "Protocol REF";
+
+                                //columns2drop.add(c - firstNodePosition);
+                                //column2dropIndex++;
+                                //c = c + 1;
                             }
 
                             if ((columnNames[c].equalsIgnoreCase("Label"))) {
-/*                            System.out.println("unnecessary Term Source REF found at " + c);
-                            columns2drop.add(c-firstNodePosition);
-                            k++;
-                            c=c+1;*/
+//                           System.out.println("unnecessary Term Source REF found at " + c);
+//                            columns2drop.add(c-firstNodePosition);
+//                            column2dropIndex++;
+                                //c=c+1;
 
                                 columnNames[c] = "Parameter Value[immunoprecipitation antibody]";
                             }
@@ -593,18 +627,18 @@ public class MAGETabSDRFLoader {
         StringBuffer blockAsString = new StringBuffer();
         int val = 0;
 
-        for (int i = 0; i < array.length; i++) {
+        for (String anArray : array) {
 
             // here we check which fields to drop
             if ((columns2drop.contains(val))) {
-                System.out.println("found" + val);
+                System.out.println("found:" + val);
                 val++;
             }
             //otherwise we print
-            else if (array[i] != null) {
+            else if (anArray != null) {
 
                 //provided the value is not equal to null, we append to the record
-                blockAsString.append(array[i]);
+                blockAsString.append(anArray);
 
                 //join record with a tab
                 if ((val != array.length - 1)) {
@@ -631,7 +665,7 @@ public class MAGETabSDRFLoader {
         StringBuffer blockAsString = new StringBuffer();
         int val = 0;
 
-        for (int i = 0; i < array.length; i++) {
+        for (String anArray : array) {
 
             // here we check which fields to drop from output Study_Sample file
             if (columns2dropFromStudy.contains(val)) {
@@ -639,10 +673,10 @@ public class MAGETabSDRFLoader {
                 val++;
             }
             //otherwise we print
-            else if (array[i] != null) {
+            else if (anArray != null) {
 
                 //provided the value is not equal to null, we append to the record
-                blockAsString.append(array[i]);
+                blockAsString.append(anArray);
 
                 //join record with a tab
                 if ((val != array.length - 1)) {
@@ -658,11 +692,11 @@ public class MAGETabSDRFLoader {
     }
 
 
-    public static int[] convertIntegers(ArrayList<Integer> integers) {
+    public static int[] convertIntegers(List<Integer> integers) {
         int[] ret = new int[integers.size()];
         Iterator<Integer> iterator = integers.iterator();
         for (int index = 0; index < ret.length; index++) {
-            ret[index] = iterator.next().intValue();
+            ret[index] = iterator.next();
         }
         return ret;
     }
