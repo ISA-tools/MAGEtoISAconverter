@@ -152,6 +152,10 @@ public class ProtocolREFUtil {
         values.addAll(protocolBlocks.keySet());
         Collections.sort(values);
 
+        System.out.println("Indexes to work on...");
+        for(Integer startIndex : values) {
+            System.out.println("\t" + startIndex);
+        }
 
         for (int startIndex = values.size() - 1; startIndex >= 0; startIndex--) {
             int rowCount = 0;
@@ -191,12 +195,10 @@ public class ProtocolREFUtil {
                     System.out.print("\n");
                 }
 
-                reconstructSpreadsheetAfterProcessing(protocolBlocks, candidates, newSpreadsheet);
+                return reconstructSpreadsheetAfterProcessing(protocolBlocks, candidates, newSpreadsheet);
             }
 
         }
-
-        System.out.println("Returning spreadsheet of size: " + spreadsheet.size() + " from reconstructSpreadsheetAfterProcessing()");
 
         return spreadsheet;
     }
@@ -232,7 +234,7 @@ public class ProtocolREFUtil {
         List<String[]> testList = null;
         try {
             Loader loader = new Loader();
-            testList = loader.loadSheet("/Users/eamonnmaguire/Documents/test-sdrf.csv", FileType.CSV);
+            testList = loader.loadSheet("DownloadedMAGEFiles/E-GEOD-11172/E-GEOD-11172.sdrf.txt", FileType.TAB);
             ProtocolREFUtil util = new ProtocolREFUtil();
 
             util.processSpreadsheet(testList);
