@@ -1,5 +1,7 @@
 package org.isatools.magetoisatab.io;
 
+//TODO: prppagate  factor values
+
 import java.io.*;
 
 import au.com.bytecode.opencsv.CSVReader;
