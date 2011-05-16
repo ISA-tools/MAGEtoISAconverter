@@ -5,6 +5,7 @@ package org.isatools.magetoisatab.io;
 import com.sun.tools.javac.util.Pair;
 import org.apache.log4j.Logger;
 
+import javax.swing.text.html.HTMLDocument;
 import java.util.List;
 import java.util.*;
 import java.lang.*;
@@ -45,8 +46,8 @@ public class MAGETabIDFLoader {
     public static final Character TAB_DELIM = '\t';
 
     public String userUrl;
-    public List<String> protocolLines;
-    public List<String> contactLines;
+
+
     public List<String> publicationLines;
     public List<String> factorLines;
     public List<String> investigationLines;
@@ -57,6 +58,12 @@ public class MAGETabIDFLoader {
     public List<String> dateLines;
     public List<String> ontoLines;
 
+    Map<InvestigationSections, List<String>> investigationSections;
+
+
+    public MAGETabIDFLoader() {
+        investigationSections = new HashMap<InvestigationSections, List<String>>();
+    }
 
     public void loadidfTab(String url, String accnum) throws IOException {
 
@@ -89,10 +96,12 @@ public class MAGETabIDFLoader {
                     if (line.startsWith("Protocol")) {
 
                         line = line.replaceFirst("Protocol", "Study Protocol");
-                        if (protocolLines == null) {
-                            protocolLines = new ArrayList<String>();
+                        if (!investigationSections.containsKey(InvestigationSections.STUDY_PROTOCOL_SECTION)) {
+                            investigationSections.put(InvestigationSections.STUDY_PROTOCOL_SECTION, new ArrayList<String>());
                         }
-                        protocolLines.add(line);
+
+                        investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION).add(line);
+
 
                     } else if (line.startsWith("Experiment Desc")) {
 
@@ -105,11 +114,11 @@ public class MAGETabIDFLoader {
                     } else if (line.startsWith("Person")) {
 
                         line = line.replaceFirst("Person", "Study Person");
-                        if (contactLines == null) {
-                            contactLines = new ArrayList<String>();
+                        if (!investigationSections.containsKey(InvestigationSections.STUDY_CONTACT_SECTION)) {
+                            investigationSections.put(InvestigationSections.STUDY_CONTACT_SECTION, new ArrayList<String>());
                         }
 
-                        contactLines.add(line);
+                        investigationSections.get(InvestigationSections.STUDY_CONTACT_SECTION).add(line);
 
                     } else if (line.startsWith("PubMed")) {
                         line = line.replaceFirst("PubMed", "Study PubMed");
@@ -128,11 +137,10 @@ public class MAGETabIDFLoader {
                          publicationLines.add(line);
 
 
-
-
                     } else if (line.startsWith("Experimental Factor")) {
 
                         line = line.replaceFirst("Experimental Factor", "Study Factor");
+                        line = line.replaceFirst("Study Factor Term", "Study Factor Type Term");
                         if (factorLines == null) {
                             factorLines = new ArrayList<String>();
                         }
@@ -218,10 +226,10 @@ public class MAGETabIDFLoader {
 
             PrintStream invPs = new PrintStream(new File("data/"+accnum+"/i_"+accnum+"_investigation.txt"));
             invPs.println("ONTOLOGY SOURCE REFERENCE");
-                        for (int i = 0; i < ontoLines.size(); i++) {
+                for (String ontoLine : ontoLines) {
 
-                            invPs.println(ontoLines.get(i));
-                        }
+                    invPs.println(ontoLine);
+                }
 
            invPs.println("Term Source Description\n" +
                     "INVESTIGATION\n" +
@@ -254,19 +262,19 @@ public class MAGETabIDFLoader {
                     "Study Identifier"+"\t"+accnum);
 
 
-            for (int i = 0; i < investigationLines.size(); i++) {
-                invPs.println(investigationLines.get(i));
-            }
+                for (String investigationLine : investigationLines) {
+                    invPs.println(investigationLine);
+                }
 
             invPs.println("Study Submission Date"+"\t"+"2011-03-01");
 
-            for (int i = 0; i < dateLines.size(); i++) {
-                invPs.println(dateLines.get(i));
-            }
+                for (String dateLine : dateLines) {
+                    invPs.println(dateLine);
+                }
 
-            for (int i = 0; i < studyDesc.size(); i++) {
-                invPs.println(studyDesc.get(i));
-            }
+                for (String aStudyDesc : studyDesc) {
+                    invPs.println(aStudyDesc);
+                }
 
             invPs.println("Study File Name" + "\t" + "s_" + accnum + "_studysample.txt");
 
@@ -278,30 +286,72 @@ public class MAGETabIDFLoader {
 
             invPs.println(
                     "Study Design Type Term Accession Number\n" +
-                            "Study Design Type Term Source REF");
+                    "Study Design Type Term Source REF");
 
 
             // System.out.println("there are" + protocolLines.length + "lines related to protocols\n");
 
             invPs.println("STUDY PUBLICATIONS");
 
-            for (int i = 0; i < publicationLines.size(); i++) {
+            Map<Integer,String> IsaPublicationSection = new HashMap<Integer,String>();
+
+              //HashMap initialization to define canonical block structure
+              IsaPublicationSection.put(0,"Study Publication PubMed ID");
+              IsaPublicationSection.put(1,"Study Publication DOI");
+              IsaPublicationSection.put(2,"Study Publication Authors List");
+              IsaPublicationSection.put(3,"Study Publication Title");
+              IsaPublicationSection.put(4,"Study Publication Status");
+              IsaPublicationSection.put(5,"Study Publication Status Term Accession Number");
+              IsaPublicationSection.put(6,"Study Publication Status Term Source REF");
+
+
+             if (publicationLines.size()>0) {
+                 for (String publicationLine : publicationLines) {
+
+                     if (publicationLine.contains("PubMed")) {
+                         IsaPublicationSection.put(0, publicationLine);
+                     }
+                     if (publicationLine.contains("DOI")) {
+                         IsaPublicationSection.put(1, publicationLine);
+                     }
+                     if (publicationLine.contains("List")) {
+                         IsaPublicationSection.put(2, publicationLine);
+                     }
+                     if (publicationLine.contains("Title")) {
+                         IsaPublicationSection.put(3, publicationLine);
+                     }
+                     if (publicationLine.contains("Status")) {
+                         IsaPublicationSection.put(4, publicationLine);
+                     }
+                     if (publicationLine.contains("Term")) {
+                         IsaPublicationSection.put(5, publicationLine);
+                     }
+                     if (publicationLine.contains("Accession")) {
+                         IsaPublicationSection.put(6, publicationLine);
+                     }
+                 }
+             }
+
+            //we now output the Publication Section of an ISA Study
+                for (Map.Entry<Integer, String> e : IsaPublicationSection.entrySet())
+                    invPs.println(e.getValue());
+
+
+           /* for (int i = 0; i < publicationLines.size(); i++) {
                 invPs.println(publicationLines.get(i));
             }
+*/
 
 
+            // Now Creating the Factor Section
             invPs.println("STUDY FACTORS");
 
-            for (int i = 0; i < factorLines.size(); i++) {
-                invPs.println(factorLines.get(i));
-            }
+                for (String factorLine : factorLines) {
+                    invPs.println(factorLine);
+                }
 
 
-
-            invPs.println(
-                    "Study Factor Type Term Accession Number\n" +
-                            "Study Factor Type Term Source REF");
-
+            //Now creating the Assay Section:
             invPs.println("STUDY ASSAYS");
 
 
@@ -324,45 +374,148 @@ public class MAGETabIDFLoader {
 
             invPs.println("Study Assay File Name" + "\t" + "a_" + accnum + "_assay.txt");
 
+
+
+
+            //Now creating the Protocol section
             invPs.println("STUDY PROTOCOLS");
 
-            System.out.println(protocolLines.get(0));
-             System.out.println(protocolLines.get(1));
-             System.out.println(protocolLines.get(2));
-             System.out.println(protocolLines.get(3));
-             invPs.println(protocolLines.get(0));
-             invPs.println(protocolLines.get(1));
 
 
-            invPs.println("Study Protocol Type Term Accession Number\n" +
-                    "Study Protocol Type Term Source REF");
+             Map<Integer,String> IsaProtocolSection = new HashMap<Integer,String>();
 
+              //HashMap initialization to define canonical block structure
+              IsaProtocolSection.put(0,"Study Protocol Name");
+              IsaProtocolSection.put(1,"Study Protocol Type");
+              IsaProtocolSection.put(2,"Study Protocol Type Term Accession Number");
+              IsaProtocolSection.put(3,"Study Protocol Type Term Source REF");
+              IsaProtocolSection.put(4,"Study Protocol Description");
+              IsaProtocolSection.put(5,"Study Protocol URI");
+              IsaProtocolSection.put(6,"Study Protocol Version");
+              IsaProtocolSection.put(7,"Study Protocol Parameters Name");
+              IsaProtocolSection.put(8,"Study Protocol Parameters Name Term Accession Number");
+              IsaProtocolSection.put(9,"Study Protocol Parameters Name Term Source REF");
+              IsaProtocolSection.put(10,"Study Protocol Components Name");
+              IsaProtocolSection.put(11,"Study Protocol Components Type");
+              IsaProtocolSection.put(12,"Study Protocol Components Type Term Accession Number");
+              IsaProtocolSection.put(13,"Study Protocol Components Type Term Source REF");
 
-             invPs.println(protocolLines.get(2));
-                     invPs.println("Study Protocol URI\n" +
-                    "Study Protocol Version");
+             if (investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION).size() >0) {
 
-               invPs.println(protocolLines.get(3));
+                 for (String protocolLine : investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION)) {
 
-                     invPs.println("Study Protocol Parameters Name Term Accession Number\n" +
-                    "Study Protocol Parameters Name Term Source REF\n" +
-                    "Study Protocol Components Name\n" +
-                    "Study Protocol Components Type\n" +
-                    "Study Protocol Components Type Term Accession Number\n" +
-                    "Study Protocol Components Type Term Source REF");
+                     if (protocolLine.contains("Name")) {
+                         IsaProtocolSection.put(0, protocolLine);
+                     }
 
+                     if (protocolLine.contains("Type")) {
 
+                         IsaProtocolSection.put(1, protocolLine);
+                     }
+                     if (protocolLine.contains("Accession")) {
+                         String tempAcc = protocolLine.replaceAll("Term Accession", "Type Term Accession");
+                         IsaProtocolSection.put(2, tempAcc);
+                     }
+                     if (protocolLine.contains("Term Source")) {
+                         String tempSource = protocolLine.replaceAll("Term Source", "Type Term Source");
+                         IsaProtocolSection.put(3, tempSource);
+                     }
+                     if (protocolLine.contains("Description")) {
+                         IsaProtocolSection.put(4, protocolLine);
+                     }
 
-            invPs.println("STUDY CONTACTS   ");
+                     if (protocolLine.endsWith("Parameters")) {
 
-            for (int i = 0; i < contactLines.size(); i++) {
-                invPs.println(contactLines.get(i));
+                         String tempParam = protocolLine.replaceAll("Parameters", "Parameters Name");
+                         IsaProtocolSection.put(5, tempParam);
+                     }
+
+                     if ((protocolLine.contains("Software")) || (protocolLine.contains("Hardware"))) {
+
+                         String tempComponent = protocolLine.replaceAll("Software", "Component Name");
+                         tempComponent = protocolLine.replaceAll("Hardware", "Component Name");
+                         IsaProtocolSection.put(10, tempComponent);
+                     }
+                 }
             }
 
+                //we now output the Protocol Section of an ISA Study
+                for (Map.Entry<Integer, String> e : IsaProtocolSection.entrySet())
+                    invPs.println(e.getValue());
 
-            invPs.println(
-                    "Study Person Role Term Accession Number\n" +
-                            "Study Person Role Term Source REF");
+
+
+            // Let's now deal with the Contact Information Section
+
+            invPs.println("STUDY CONTACTS");
+
+            Map<Integer,String> IsaContactSection = new HashMap<Integer,String>();
+
+              //HashMap initialization to define canonical block structure
+              IsaContactSection.put(0,"Study Person Last Name");
+              IsaContactSection.put(1,"Study Person First Name");
+              IsaContactSection.put(2,"Study Person Mid Initials");
+              IsaContactSection.put(3,"Study Person Email");
+              IsaContactSection.put(4,"Study Person Phone");
+              IsaContactSection.put(5,"Study Person Fax");
+              IsaContactSection.put(6,"Study Person Address");
+              IsaContactSection.put(7,"Study Person Affiliation");
+              IsaContactSection.put(8,"Study Person Roles");
+              IsaContactSection.put(9,"Study Person Roles Term Accession Number");
+              IsaContactSection.put(10,"Study Person Roles Term Source REF");
+
+
+             if (investigationSections.get(InvestigationSections.STUDY_CONTACT_SECTION).size()>0) {
+
+                 for (String contactLine : investigationSections.get(InvestigationSections.STUDY_CONTACT_SECTION)) {
+
+                     if (contactLine.contains("Last")) {
+                         IsaContactSection.put(0, contactLine);
+                     }
+                     if (contactLine.contains("First")) {
+                         IsaContactSection.put(1, contactLine);
+                     }
+                     if (contactLine.contains("Mid")) {
+                         IsaContactSection.put(2, contactLine);
+                     }
+                     if (contactLine.contains("Email")) {
+                         IsaContactSection.put(3, contactLine);
+                     }
+                     if (contactLine.contains("Phone")) {
+                         IsaContactSection.put(4, contactLine);
+                     }
+                     if (contactLine.contains("Fax")) {
+                         IsaContactSection.put(5, contactLine);
+                     }
+                     if (contactLine.contains("Address")) {
+                         IsaContactSection.put(6, contactLine);
+                     }
+                     if (contactLine.contains("Affiliation")) {
+                         IsaContactSection.put(7, contactLine);
+                     }
+                     if ((contactLine.contains("Roles") && !(contactLine.contains("Roles Term")))) {
+
+                         IsaContactSection.put(8, contactLine);
+                     }
+                     if (contactLine.contains("Roles Term Accession")) {
+
+                         IsaContactSection.put(9, contactLine);
+                     }
+                     if (contactLine.contains("Roles Term Source")) {
+
+                         IsaContactSection.put(10, contactLine);
+                     }
+
+
+                 }
+             } else { System.out.println("life sucks\n");}
+
+
+              //we now output the Contact Section of an ISA Study
+                for (Map.Entry<Integer, String> e : IsaContactSection.entrySet())
+                    invPs.println(e.getValue());
+
+
 
             } else {
             System.out.println("ERROR: File not found");
@@ -408,12 +561,12 @@ public class MAGETabIDFLoader {
             measurements.add("transcription profiling");
             technologies.add("DNA microarray");
 
-        } else if (line.matches(".*methylation profiling by array.*")) {
+        } else if (line.matches("(?i).*methylation profiling by array.*")) {
 
             measurements.add("DNA methylation profiling");
             technologies.add("DNA microarray");
 
-        } else if (line.matches(".*comparative genomic hybridization by array.*")) {
+        } else if (line.matches("(?i).*comparative genomic hybridization by array.*")) {
 
             measurements.add("comparative genomic hybridization");
             technologies.add("DNA microarray");
@@ -423,12 +576,12 @@ public class MAGETabIDFLoader {
             measurements.add("SNP analysis");
             technologies.add("DNA microarray");
 
-        } else if (line.matches(".*transcription profiling by high throughput sequencing.*")) {
+        } else if (line.matches("(?i).*transcription profiling by high throughput sequencing.*")) {
 
             measurements.add("transcription profiling");
             technologies.add("nucleotide sequencing");
 
-        } else if (line.matches(".*ChIP-Seq.*")) {
+        } else if (line.matches("(?i).*ChIP-Seq.*")) {
 
             measurements.add("protein-DNA binding site identification");
             technologies.add("nucleotide sequencing");

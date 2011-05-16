@@ -1,6 +1,8 @@
 package org.isatools.magetoisatab.io;
 
 import au.com.bytecode.opencsv.CSVReader;
+import org.isatools.io.FileType;
+import org.isatools.io.Loader;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -24,33 +26,27 @@ public class MAGETabLoader {
 
         File mageTaDir = new File(MAGETabDirectory);
 
-        if (mageTaDir.exists()) {
-            if (mageTaDir.isDirectory()) {
+        try {
 
-                File[] mageTabFiles = mageTaDir.listFiles();
+            if (mageTaDir.exists()) {
+                if (mageTaDir.isDirectory()) {
 
-                for (File file : mageTabFiles) {
-                    CSVReader fileReader = new CSVReader(new FileReader(file), TAB_DELIM);
+                    File[] mageTabFiles = mageTaDir.listFiles();
 
-                    // you can read each line separately!
-                    String[] nextLine;
+                    for (File file : mageTabFiles) {
+                        Loader fileReader = new Loader();
 
-                    while ((nextLine = fileReader.readNext()) != null) {
-
-                        // do whatever you want with the line
-
+                        List<String[]> myEntries = fileReader.loadSheet(file.getAbsolutePath(), FileType.TAB);
                     }
 
 
-                    // or you can get the whole file as a list of String arrays. Each list item is a row.
-                    List<String[]> myEntries = fileReader.readAll();
+                } else {
+                    // throw an Exception declaring that the given path is not a directory
                 }
-
-
-
-            } else {
-                // throw an Exception declaring that the given path is not a directory
             }
+
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
         }
 
     }

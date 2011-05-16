@@ -53,7 +53,7 @@
         </plugins>
     </build>
 
-     <repositories>
+    <repositories>
 
         <repository>
             <id>mvnrepository</id>
@@ -71,15 +71,15 @@
             <url>http://repo1.maven.org/maven2/</url>
         </repository>
 
+        <repository>
+            <id>oerc</id>
+            <url>http://frog.oerc.ox.ac.uk:8080/artifactory/repo/</url>
+        </repository>
+
+
     </repositories>
 
     <dependencies>
-
-        <dependency>
-            <groupId>net.sf.opencsv</groupId>
-            <artifactId>opencsv</artifactId>
-            <version>2.1</version>
-        </dependency>
 
         <dependency>
             <groupId>junit</groupId>
@@ -92,6 +92,12 @@
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
             <version>1.2.8</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.isatools</groupId>
+            <artifactId>SpreadsheetManipulator</artifactId>
+            <version>0.1</version>
         </dependency>
 
     </dependencies>
