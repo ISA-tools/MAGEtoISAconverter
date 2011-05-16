@@ -1,7 +1,10 @@
 package org.isatools.magetoisatab.utils;
 
+import org.isatools.io.FileType;
+import org.isatools.io.Loader;
 import org.isatools.manipulator.SpreadsheetManipulation;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -70,7 +73,7 @@ public class ProtocolREFUtil {
                      columnIndex < startIndex + candidates.get(startIndex); columnIndex++) {
 
                     if (columnIndex < column.length) {
-                        if (!column[columnIndex].equals("")) {
+                        if (!column[columnIndex].trim().equals("")) {
                             rowToProtocolValues.get(rowNumber).get(startIndex).add(column[columnIndex]);
                         }
                     }
@@ -225,16 +228,18 @@ public class ProtocolREFUtil {
 
     public static void main(String[] args) {
 
-        List<String[]> testList = new ArrayList<String[]>();
 
-        testList.add(new String[]{"Sample Name", "Label", "Protocol REF", "Protocol REF", "Protocol REF", "Extract Name", "Protocol REF", "Protocol REF", "Array Data File"});
-        testList.add(new String[]{"sample1", "cy3", "prot1", "", "", "extract1", "", "prot2", "blah.cel"});
-        testList.add(new String[]{"sample2", "cy5", "", "prot1", "prot1", "extract1", "prot1", "", "blah.cel"});
-        testList.add(new String[]{"sample3", "cy5", "", "", "prot1", "extract1", "prot1", "", "blah.cel"});
+        List<String[]> testList = null;
+        try {
+            Loader loader = new Loader();
+            testList = loader.loadSheet("/Users/eamonnmaguire/Documents/test-sdrf.csv", FileType.CSV);
+            ProtocolREFUtil util = new ProtocolREFUtil();
 
-        ProtocolREFUtil util = new ProtocolREFUtil();
+            util.processSpreadsheet(testList);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
-        util.processSpreadsheet(testList);
 
     }
 }
