@@ -1,6 +1,6 @@
 package org.isatools.magetoisatab.io;
 
-//TODO: prppagate  factor values
+//TODO: prppagate  factor values and cleanup
 
 import java.io.*;
 
