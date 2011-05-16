@@ -7,13 +7,7 @@ import org.isatools.manipulator.SpreadsheetManipulation;
 import java.io.IOException;
 import java.util.*;
 
-/**
- * Created by IntelliJ IDEA.
- * User: Philippe
- * Date: 13/05/2011
- * Time: 15:15
- * To change this template use File | Settings | File Templates.
- */
+
 public class ProtocolREFUtil {
 
     private Map<Integer, Integer> selectCandidates(String[] columnNames) {

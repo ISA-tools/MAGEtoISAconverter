@@ -1,23 +1,14 @@
 package org.isatools.magetoisatab.io;
 
-import au.com.bytecode.opencsv.CSVReader;
+
 import org.isatools.io.FileType;
 import org.isatools.io.Loader;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * Created by the ISA team
- *
- * @author Eamonn Maguire (eamonnmag@gmail.com)
- *         <p/>
- *         Date: 02/03/2011
- *         Time: 18:02
- */
+
 public class MAGETabLoader {
 
     public static final Character TAB_DELIM = '\t';

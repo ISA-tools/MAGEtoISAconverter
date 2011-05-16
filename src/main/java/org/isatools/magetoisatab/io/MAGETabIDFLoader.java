@@ -17,19 +17,6 @@ import java.io.IOException;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
-
-
-/**
-* Created by the ISA team
-*
-* @author Philippe Rocca-Serra (proccaserra@gmail.com)
-*         <p/>
-*         Date: 02/03/2011
-*         Time: 18:02
-*/
-
-
-
 /**
  A class to convert MAGE-TAB idf file to an ISA-TAB investigation file.
  The input can be either an ArrayExpress Accession number or the full address of a file on a local file system.

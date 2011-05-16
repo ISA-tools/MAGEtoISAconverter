@@ -7,13 +7,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 
-/**
- * Created by IntelliJ IDEA.
- * User: Philippe
- * Date: 09/03/2011
- * Time: 18:57
- * To change this template use File | Settings | File Templates.
- */
 public class DownloadUtils {
     private static Logger log = Logger.getLogger(DownloadUtils.class.getName());
 

@@ -14,15 +14,7 @@ import java.lang.*;
 
 import org.isatools.manipulator.SpreadsheetManipulation;
 
-/**
- * Created by the ISA team
- *
- * @author Eamonn Maguire (eamonnmag@gmail.com)
- * @author Philippe Rocca-Serra (proccaserra@gmail.com)
- *         <p/>
- *         Date: 02/03/2011
- *         Time: 18:02
- */
+
 public class MAGETabSDRFLoader {
 
     public static final Character TAB_DELIM = '\t';
