@@ -90,13 +90,21 @@ public class MAGETabIDFLoader {
 
         try {
 
-
            File file =  new File(url);
+
+            boolean exists = (new File("data")).exists();
+
+                if (!exists) {
+                    boolean good = (new File("data")).mkdir();
+                    if (good) { System.out.println("data directory created"); }
+                }
 
             boolean success = (new File("data/"+accnum)).mkdir();
                 if (success) {
-                System.out.println("Directory: " + accnum + " created");
-            }
+                    System.out.println("Directory: " + accnum + " created");
+                }
+
+
 
             if (file.exists()) {
 
@@ -140,49 +148,41 @@ public class MAGETabIDFLoader {
                         }
 
                         investigationSections.get(InvestigationSections.STUDY_CONTACT_SECTION).add(line);
-
-                    } else if (line.startsWith("PubMed")) {
+                    }
+                    else if (line.startsWith("PubMed")) {
                         line = line.replaceFirst("PubMed", "Study PubMed");
                         if (publicationLines == null)   {
                             publicationLines = new ArrayList<String>();
                         }
                          publicationLines.add(line);
-
-
-                    } else if (line.startsWith("Publication")) {
+                    }
+                    else if (line.startsWith("Publication")) {
 
                         line = line.replaceFirst("Publication", "Study Publication");
                         if (publicationLines == null)   {
                             publicationLines = new ArrayList<String>();
                         }
                          publicationLines.add(line);
-
-
-                    } else if (line.startsWith("Experimental Factor Name")) {
+                    }
+                    else if (line.startsWith("Experimental Factor Name")) {
                         line = line.toLowerCase();
                         line = line.replaceFirst("experimental factor name", "Study Factor Name");
                          factorLines.set(0,line);
-
                     }
                      else if (line.startsWith("Experimental Factor Type")) {
                         line = line.toLowerCase();
                         line = line.replaceFirst("experimental factor type", "Study Factor Type");
                          factorLines.set(1, line);
-
-
                     }
                     else if (line.endsWith("Factor Term Accession")) {
                         line = line.replaceFirst("Experimental", "Study");
                          factorLines.set(2,line);
-
                     }
                     else if (line.endsWith("Factor Term Source REF")) {
                         line = line.replaceFirst("Experimental", "Study");
                          factorLines.set(3,line);
-
                     }
                     else if ( (line.contains("Experimental Design")) && (!(line.contains("Experimental Design Term")))) {
-
                         line = line.replaceFirst("Experimental Design", "Study Design Type");
                         designLines.set(0,line);
                     }
@@ -202,50 +202,44 @@ public class MAGETabIDFLoader {
                          designLines.set(0, line);
                     }
 
-
                     else if (line.startsWith("SDRF File")) {
                         line = line.replaceFirst("SDRF File", "Study Assay File Name");
                         if (assaylines == null) {
                             assaylines = new ArrayList<String>();
                         }
                         assaylines.add(line);
-
-
-                    } else if (line.startsWith("Investigation")) {
-
+                    }
+                    else if (line.startsWith("Investigation")) {
                         line = line.replaceFirst("Investigation", "Study");
                         if (investigationLines == null) {
                             investigationLines = new ArrayList<String>();
                         }
-
                         investigationLines.add(line);
-
-
-                    } else if (line.startsWith("Public")) {
+                    }
+                    else if (line.startsWith("Public")) {
                         line = line.replaceFirst("Public", "Study Public");
                         if (dateLines == null) {
                             dateLines = new ArrayList<String>();
                         }
                         dateLines.add(line);
-
-
-                    } else if  (line.startsWith("Term Source Name")) {
+                    }
+                    else if  (line.startsWith("Term Source Name")) {
 
                         ontoLines.set(0, line);
 
-                    } else if  (line.startsWith("Term Source File")) {
+                    }
+                    else if  (line.startsWith("Term Source File")) {
 
                         ontoLines.set(2, line);
 
-                    } else if  (line.startsWith("Term Source Version")) {
+                    }
+                    else if  (line.startsWith("Term Source Version")) {
 
                         ontoLines.set(1, line);
-
-
-                    } else if  (line.startsWith("Term Source Description")) {
+                    }
+                    else if  (line.startsWith("Term Source Description")) {
 
                         ontoLines.set(3, line);
-
 
                     }
                     else if (commentmatcher.find()) {
@@ -255,7 +249,6 @@ public class MAGETabIDFLoader {
                             commentLines = new ArrayList<String>();
                         }
                         commentLines.add(line);
-
 
                     } else {
                         System.out.println("regular line: " + line + "\n");
