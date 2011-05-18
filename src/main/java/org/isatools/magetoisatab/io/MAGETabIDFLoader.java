@@ -14,8 +14,7 @@ import java.io.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
+
 
 
 /**
@@ -32,8 +31,6 @@ import java.util.regex.Matcher;
  * A class to convert MAGE-TAB idf file to an ISA-TAB investigation file.
  * The input can be either an ArrayExpress Accession number or the full address of a file on a local file system.
  * The output is an ISA-TAB investigation file.
- * TODO: implement testing structure of accession number s/E-\w+-\d+/
- * TODO: exception handling such as "access denied" or "file not found"
  */
 
 public class MAGETabIDFLoader {
@@ -42,32 +39,23 @@ public class MAGETabIDFLoader {
 
     public static final Character TAB_DELIM = '\t';
 
-    public String userUrl;
+    public List<String> investigationLines;
 
+    public Map<Integer, String> IsaPublicationSection = new HashMap<Integer, String>() {
+        {
+            //HashMap initialization to define canonical block structure
+            put(0, "Study Publication PubMed ID");
+            put(1, "Study Publication DOI");
+            put(2, "Study Publication Authors List");
+            put(3, "Study Publication Title");
+            put(4, "Study Publication Status");
+            put(5, "Study Publication Status Term Accession Number");
+            put(6, "Study Publication Status Term Source REF");
+        }
+    };
 
     public List<String> publicationLines;
-
-    public List<String> factorLines = new ArrayList<String>() {
-        {
-            add("Study Factor Name");
-            add("Study Factor Type");
-            add("Study Factor Type Term Accession Number");
-            add("Study Factor Type Term Source REF");
-        }
-    };
-    public List<String> investigationLines;
     public List<String> studyDesc;
-
-    public List<String> designLines = new ArrayList<String>() {
-        {
-            add("Study Design Type");
-            add("Study Design Type Term Accession Number");
-            add("Study Design Type Term Source REF");
-        }
-    };
-
-
-    public List<String> commentLines;
     public List<String> assaylines;
     public List<String> dateLines;
 
@@ -80,13 +68,54 @@ public class MAGETabIDFLoader {
         }
     };
 
+    public List<String> factorLines = new ArrayList<String>() {
+        {
+            add("Study Factor Name");
+            add("Study Factor Type");
+            add("Study Factor Type Term Accession Number");
+            add("Study Factor Type Term Source REF");
+        }
+    };
+
+    public List<String> designLines = new ArrayList<String>() {
+        {
+            add("Study Design Type");
+            add("Study Design Type Term Accession Number");
+            add("Study Design Type Term Source REF");
+        }
+    };
+
+
+    public   Map<Integer, String> IsaProtocolSection = new HashMap<Integer, String>(){
+        {
+          //HashMap initialization to define canonical block structure
+            put(0, "Study Protocol Name");
+            put(1, "Study Protocol Type");
+            put(2, "Study Protocol Type Term Accession Number");
+            put(3, "Study Protocol Type Term Source REF");
+            put(4, "Study Protocol Description");
+            put(5, "Study Protocol URI");
+            put(6, "Study Protocol Version");
+            put(7, "Study Protocol Parameters Name");
+            put(8, "Study Protocol Parameters Name Term Accession Number");
+            put(9, "Study Protocol Parameters Name Term Source REF");
+            put(10, "Study Protocol Components Name");
+            put(11, "Study Protocol Components Type");
+            put(12, "Study Protocol Components Type Term Accession Number");
+            put(13, "Study Protocol Components Type Term Source REF");
+        }
+    };
 
     Map<InvestigationSections, List<String>> investigationSections;
+
+
+
 
 
     public MAGETabIDFLoader() {
         investigationSections = new HashMap<InvestigationSections, List<String>>();
     }
+
 
     public void loadidfTab(String url, String accnum) throws IOException {
 
@@ -105,15 +134,9 @@ public class MAGETabIDFLoader {
 
                 String line;
 
-                Pattern commentregex = Pattern.compile("^Comment");
-
-
                 while (sc.hasNextLine()) {
 
                     if ((line = sc.nextLine()) != null) {
-
-                        Matcher commentmatcher = commentregex.matcher(line);
-                        //Matcher qcmatcher = qcregex.matcher(line);
 
                         if (line.startsWith("Protocol")) {
 
@@ -141,6 +164,7 @@ public class MAGETabIDFLoader {
                             }
 
                             investigationSections.get(InvestigationSections.STUDY_CONTACT_SECTION).add(line);
+
                         } else if (line.startsWith("PubMed")) {
                             line = line.replaceFirst("PubMed", "Study PubMed");
                             if (publicationLines == null) {
@@ -154,7 +178,12 @@ public class MAGETabIDFLoader {
                                 publicationLines = new ArrayList<String>();
                             }
                             publicationLines.add(line);
-                        } else if (line.startsWith("Experimental Factor Name")) {
+                        }
+
+
+                        //Now Dealing with element from Protocol Section
+
+                        else if (line.startsWith("Experimental Factor Name")) {
                             line = line.toLowerCase();
                             line = line.replaceFirst("experimental factor name", "Study Factor Name");
                             factorLines.set(0, line);
@@ -182,6 +211,7 @@ public class MAGETabIDFLoader {
 //                        designLines.set(2,line);
 //                    }
 
+                        //This bit is used to recover information for setting ISA MT and TT in case no Experimental Design is found
                         else if (line.startsWith("Comment[AEExperimentType")) {
                             System.out.println("Alternative Design Tag found at: " + line);
                             line = line.replace("Comment[AEExperimentType]", "Study Design Type");
@@ -227,20 +257,6 @@ public class MAGETabIDFLoader {
 
                             ontoLines.set(3, line);
 
-                        }
-
-
-                        // getting all Comment fields found in IDF
-                        else if (commentmatcher.find()) {
-
-                            System.out.println("comment line: " + line + "\n");
-                            if (commentLines == null) {
-                                commentLines = new ArrayList<String>();
-                            }
-                            commentLines.add(line);
-
-                        } else {
-                            System.out.println("regular line: " + line + "\n");
                         }
 
                     } else {
@@ -312,16 +328,7 @@ public class MAGETabIDFLoader {
 
                 invPs.println("STUDY PUBLICATIONS");
 
-                Map<Integer, String> IsaPublicationSection = new HashMap<Integer, String>();
 
-                //HashMap initialization to define canonical block structure
-                IsaPublicationSection.put(0, "Study Publication PubMed ID");
-                IsaPublicationSection.put(1, "Study Publication DOI");
-                IsaPublicationSection.put(2, "Study Publication Authors List");
-                IsaPublicationSection.put(3, "Study Publication Title");
-                IsaPublicationSection.put(4, "Study Publication Status");
-                IsaPublicationSection.put(5, "Study Publication Status Term Accession Number");
-                IsaPublicationSection.put(6, "Study Publication Status Term Source REF");
 
 
                 if (publicationLines.size() > 0) {
@@ -395,25 +402,7 @@ public class MAGETabIDFLoader {
                 invPs.println("STUDY PROTOCOLS");
 
 
-                Map<Integer, String> IsaProtocolSection = new HashMap<Integer, String>();
-
-                //HashMap initialization to define canonical block structure
-                IsaProtocolSection.put(0, "Study Protocol Name");
-                IsaProtocolSection.put(1, "Study Protocol Type");
-                IsaProtocolSection.put(2, "Study Protocol Type Term Accession Number");
-                IsaProtocolSection.put(3, "Study Protocol Type Term Source REF");
-                IsaProtocolSection.put(4, "Study Protocol Description");
-                IsaProtocolSection.put(5, "Study Protocol URI");
-                IsaProtocolSection.put(6, "Study Protocol Version");
-                IsaProtocolSection.put(7, "Study Protocol Parameters Name");
-                IsaProtocolSection.put(8, "Study Protocol Parameters Name Term Accession Number");
-                IsaProtocolSection.put(9, "Study Protocol Parameters Name Term Source REF");
-                IsaProtocolSection.put(10, "Study Protocol Components Name");
-                IsaProtocolSection.put(11, "Study Protocol Components Type");
-                IsaProtocolSection.put(12, "Study Protocol Components Type Term Accession Number");
-                IsaProtocolSection.put(13, "Study Protocol Components Type Term Source REF");
-
-                if (investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION).size() > 0) {
+               if (investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION).size() > 0) {
 
                     for (String protocolLine : investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION)) {
 

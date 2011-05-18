@@ -572,6 +572,7 @@ public class MAGETabSDRFLoader {
 
                         if (columnNames[columnIndex].equalsIgnoreCase("Hybridization Name")) {
                             columnNames[columnIndex] = "Hybridization Assay Name";
+                            studyAssayHeaders += columnNames[columnIndex] + "\t";
                         }
 
                         //Here in case Sequencing is used (tt>=) we replace MAGE-TAB Labeled Extract Name field with Protocol REF
@@ -616,6 +617,7 @@ public class MAGETabSDRFLoader {
                         else if (columnNames[columnIndex].startsWith("FactorValue "))  {
                             columnNames[columnIndex]=columnNames[columnIndex].toLowerCase();
                             columnNames[columnIndex]=columnNames[columnIndex].replaceAll("factorvalue ","Factor Value");
+                           studyAssayHeaders += columnNames[columnIndex] + "\t";
                         }
                         else {
                         studyAssayHeaders += columnNames[columnIndex] + "\t";
