@@ -104,8 +104,6 @@ public class MAGETabIDFLoader {
                     System.out.println("Directory: " + accnum + " created");
                 }
 
-
-
             if (file.exists()) {
 
             Scanner sc = new Scanner(file);
