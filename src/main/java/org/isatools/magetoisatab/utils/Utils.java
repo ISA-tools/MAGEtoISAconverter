@@ -1,5 +1,6 @@
 package org.isatools.magetoisatab.utils;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -47,6 +48,21 @@ public class Utils {
 
         return columnOrder;
 
+    }
+
+    public static List<String[]> cleanInput(List<String[]> spreadsheet) {
+
+        List<String[]> cleanedData = new ArrayList<String[]>();
+
+        for(String[] line : spreadsheet) {
+            if(line.length > 0) {
+                if(!line[0].trim().equals("")) {
+                    cleanedData.add(line);
+                }
+            }
+        }
+
+        return cleanedData;
     }
 
 

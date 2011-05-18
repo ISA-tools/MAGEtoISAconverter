@@ -6,6 +6,7 @@ import com.sun.tools.javac.util.Pair;
 import org.apache.log4j.Logger;
 
 import javax.swing.text.html.HTMLDocument;
+import java.beans.DesignMode;
 import java.util.List;
 import java.util.*;
 import java.lang.*;
@@ -49,14 +50,34 @@ public class MAGETabIDFLoader {
 
 
     public List<String> publicationLines;
-    public List<String> factorLines;
+
+    public List<String> factorLines= new ArrayList<String>(){ {
+        add("Study Factor Name");
+        add("Study Factor Type");
+        add("Study Factor Type Term Accession Number");
+        add("Study Factor Type Term Source REF");
+    } };
     public List<String> investigationLines;
     public List<String> studyDesc;
-    public List<String> designLines;
+
+    public List<String> designLines = new ArrayList<String>(){ {
+        add("Study Design Type");
+        add("Study Design Type Term Accession Number");
+        add("Study Design Type Term Source REF");
+    } };
+
+
     public List<String> commentLines;
     public List<String> assaylines;
     public List<String> dateLines;
-    public List<String> ontoLines;
+
+    public List<String> ontoLines = new ArrayList<String>(){ {
+        add("Term Source Name");
+        add("Term Source File");
+        add("Term Source Version");
+        add("Term Source Description");
+    } };
+
 
     Map<InvestigationSections, List<String>> investigationSections;
 
@@ -137,24 +158,52 @@ public class MAGETabIDFLoader {
                          publicationLines.add(line);
 
 
-                    } else if (line.startsWith("Experimental Factor")) {
+                    } else if (line.startsWith("Experimental Factor Name")) {
+                        line = line.toLowerCase();
+                        line = line.replaceFirst("experimental factor name", "Study Factor Name");
+                         factorLines.set(0,line);
 
-                        line = line.replaceFirst("Experimental Factor", "Study Factor");
-                        line = line.replaceFirst("Study Factor Term", "Study Factor Type Term");
-                        if (factorLines == null) {
-                            factorLines = new ArrayList<String>();
-                        }
-                        factorLines.add(line);
-                    } else if (line.startsWith("Experimental Design")) {
+                    }
+                     else if (line.startsWith("Experimental Factor Type")) {
+                        line = line.toLowerCase();
+                        line = line.replaceFirst("experimental factor type", "Study Factor Type");
+                         factorLines.set(1, line);
+
+
+                    }
+                    else if (line.endsWith("Factor Term Accession")) {
+                        line = line.replaceFirst("Experimental", "Study");
+                         factorLines.set(2,line);
+
+                    }
+                    else if (line.endsWith("Factor Term Source REF")) {
+                        line = line.replaceFirst("Experimental", "Study");
+                         factorLines.set(3,line);
+
+                    }
+                    else if ( (line.contains("Experimental Design")) && (!(line.contains("Experimental Design Term")))) {
 
                         line = line.replaceFirst("Experimental Design", "Study Design Type");
-                        if (designLines == null) {
-                            designLines = new ArrayList<String>();
-                        }
-                        designLines.add(line);
+                        designLines.set(0,line);
+                    }
+//                    else if (line.startsWith("Experimental Design Term Accession")) {
+//                        line=line.replaceAll("Experimental Design", "Study Design Type");
+//                        designLines.set(1,line);
+//                    }
+//
+//                    else if (line.startsWith("Experimental Design Term Source")) {
+//                        line=line.replaceAll("Experimental Design", "Study Design Type");
+//                        designLines.set(2,line);
+//                    }
+
+                    else if (line.startsWith("Comment[AEExperimentType")) {
+                        System.out.println("Alternative Design Tag found at: " + line);
+                        line=line.replace("Comment[AEExperimentType]", "Study Design Type");
+                         designLines.set(0, line);
+                    }
 
 
-                    } else if (line.startsWith("SDRF File")) {
+                    else if (line.startsWith("SDRF File")) {
                         line = line.replaceFirst("SDRF File", "Study Assay File Name");
                         if (assaylines == null) {
                             assaylines = new ArrayList<String>();
@@ -182,30 +231,24 @@ public class MAGETabIDFLoader {
 
                     } else if  (line.startsWith("Term Source Name")) {
 
-                        if ( ontoLines ==null ) {
-
-                            ontoLines = new ArrayList<String>();
-                        }
-                        ontoLines.add(line);
+                        ontoLines.set(0, line);
 
                     } else if  (line.startsWith("Term Source File")) {
 
-                        if ( ontoLines ==null ) {
-
-                            ontoLines = new ArrayList<String>();
-                        }
-                        ontoLines.add(line);
+                        ontoLines.set(2, line);
 
                     } else if  (line.startsWith("Term Source Version")) {
 
-                        if ( ontoLines ==null ) {
-
-                            ontoLines = new ArrayList<String>();
-                        }
-                        ontoLines.add(line);
+                        ontoLines.set(1, line);
 
 
-                    } else if (commentmatcher.find()) {
+                    } else if  (line.startsWith("Term Source Description")) {
+
+                        ontoLines.set(3, line);
+
+
+                    }
+                    else if (commentmatcher.find()) {
 
                         System.out.println("comment line: " + line + "\n");
                         if (commentLines == null) {
@@ -280,16 +323,11 @@ public class MAGETabIDFLoader {
 
             invPs.println("STUDY DESIGN DESCRIPTORS");
 
-            for (int i = 0; i < designLines.size()-1; i++) {
-                invPs.println(designLines.get(i));
-            }
+                for (int i = 0; i < designLines.size(); i++) {
 
-            invPs.println(
-                    "Study Design Type Term Accession Number\n" +
-                    "Study Design Type Term Source REF");
+                    invPs.println(designLines.get(i));
+                }
 
-
-            // System.out.println("there are" + protocolLines.length + "lines related to protocols\n");
 
             invPs.println("STUDY PUBLICATIONS");
 
@@ -320,13 +358,13 @@ public class MAGETabIDFLoader {
                      if (publicationLine.contains("Title")) {
                          IsaPublicationSection.put(3, publicationLine);
                      }
-                     if (publicationLine.contains("Status")) {
+                     if (publicationLine.endsWith("Status")) {
                          IsaPublicationSection.put(4, publicationLine);
                      }
-                     if (publicationLine.contains("Term")) {
+                     if (publicationLine.contains("Status Term Accession")) {
                          IsaPublicationSection.put(5, publicationLine);
                      }
-                     if (publicationLine.contains("Accession")) {
+                     if (publicationLine.contains("Status Term Source")) {
                          IsaPublicationSection.put(6, publicationLine);
                      }
                  }
@@ -335,12 +373,6 @@ public class MAGETabIDFLoader {
             //we now output the Publication Section of an ISA Study
                 for (Map.Entry<Integer, String> e : IsaPublicationSection.entrySet())
                     invPs.println(e.getValue());
-
-
-           /* for (int i = 0; i < publicationLines.size(); i++) {
-                invPs.println(publicationLines.get(i));
-            }
-*/
 
 
             // Now Creating the Factor Section
@@ -355,24 +387,33 @@ public class MAGETabIDFLoader {
             invPs.println("STUDY ASSAYS");
 
 
+             // We are now trying to get the Measurement and Technology Type from MAGE annotation Experimental Design Type
+
+
+                System.out.println("expeirmental design is :" + designLines.get(0));
              StringBuffer alpha = getMeasurementAndTech(designLines.get(0)).fst;
-                          invPs.println(alpha);
-
-            invPs.println("Study Assay Measurement Type Term Accession Number\n" +
-                    "Study Assay Measurement Type Term Source REF");
-
-
              StringBuffer beta = getMeasurementAndTech(designLines.get(0)).snd;
 
+
+             // If this fails, we are falling back on checking MAGE-TAB Comment[AEExperimentType] line
+             //StringBuffer
+
+
+             invPs.println(alpha);
+             invPs.println("Study Assay Measurement Type Term Accession Number\n" +
+                    "Study Assay Measurement Type Term Source REF");
+
              invPs.println(beta);
-
-
-            invPs.println("Study Assay Technology Type Term Accession Number\n" +
+             invPs.println("Study Assay Technology Type Term Accession Number\n" +
                     "Study Assay Technology Type Term Source REF\n" +
                     "Study Assay Technology Platform");
 
 
             invPs.println("Study Assay File Name" + "\t" + "a_" + accnum + "_assay.txt");
+
+
+
+
 
 
 
@@ -432,8 +473,8 @@ public class MAGETabIDFLoader {
 
                      if ((protocolLine.contains("Software")) || (protocolLine.contains("Hardware"))) {
 
-                         String tempComponent = protocolLine.replaceAll("Software", "Component Name");
-                         tempComponent = protocolLine.replaceAll("Hardware", "Component Name");
+                         String tempComponent = protocolLine.replaceAll("Software", "Components Name");
+                          tempComponent = tempComponent.replaceAll("Hardware", "Components Name");
                          IsaProtocolSection.put(10, tempComponent);
                      }
                  }
@@ -546,13 +587,15 @@ public class MAGETabIDFLoader {
         StringBuffer MeasurementsAsString = new StringBuffer();
         StringBuffer TechnologiesAsString = new StringBuffer();
 
+        MeasurementsAsString.append("Study Assay Measurement Type\t");
+        TechnologiesAsString.append("Study Assay Technology Type\t");
+
         Pair<StringBuffer, StringBuffer> resultMtTt = new Pair<StringBuffer, StringBuffer>(MeasurementsAsString, TechnologiesAsString);
 
 
 
         if (line.matches("(?i).*ChIP-Chip.*")) {
 
-            System.out.println("@@@" + line);
             measurements.add("protein-DNA binding site identification");
             technologies.add("DNA microarray");
 
@@ -589,8 +632,7 @@ public class MAGETabIDFLoader {
         }
 
 
-        MeasurementsAsString.append("Study Assay Measurement Type\t");
-        TechnologiesAsString.append("Study Assay Technology Type\t");
+
 
         int val = 0;
 
