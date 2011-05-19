@@ -263,7 +263,7 @@ public class MAGETabIDFLoader {
                             investigationLines.add(line);
                         }
                         else if (line.startsWith("Public R")) {
-                            line = line.replaceFirst("Public", "Study Public R");
+                            line = line.replaceFirst("Public", "Study Public");
                             if (dateLines == null) {
                                 dateLines = new ArrayList<String>();
                             }
@@ -283,6 +283,7 @@ public class MAGETabIDFLoader {
                         } else if (line.startsWith("Term Source Version")) {
 
                             ontoLines.set(1, line);
+
                         } else if (line.startsWith("Term Source Description")) {
 
                             ontoLines.set(3, line);
@@ -339,8 +340,7 @@ public class MAGETabIDFLoader {
                 }
 
 
-                //TODO: fetch the correct date from MAGE-TAB record
-                invPs.println("Study Submission Date" + "\t" + "2011-03-01");
+                invPs.println("Study Submission Date");
 
                 for (String dateLine : dateLines) {
                     invPs.println(dateLine);
