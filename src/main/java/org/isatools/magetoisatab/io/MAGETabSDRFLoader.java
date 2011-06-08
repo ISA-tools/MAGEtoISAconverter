@@ -148,11 +148,16 @@ public class MAGETabSDRFLoader {
                 LinkedList<Column> columnOrders = Utils.createColumnOrderList(columnNames);
 
                 int assayNameIndex = Utils.getIndexForValue("Assay Name", columnOrders);
+                int derivedArrayDataFileIndex = Utils.getIndexForValue("Derived Array Data File", columnOrders);
 
                 //fetching and moving the technology type field  if present
                  if (tt>=0) {
                 Column technology = columnOrders.remove(Utils.getIndexForValue("technology type", columnOrders));
                 columnOrders.add(assayNameIndex, technology);
+
+                Column scanName = columnOrders.remove(Utils.getIndexForValue("Scan Name", columnOrders));
+                columnOrders.add(derivedArrayDataFileIndex - 1, scanName);
+
                  }
 
                 //fetching and moving the platform title field if present
@@ -165,6 +170,8 @@ public class MAGETabSDRFLoader {
                 for (Column column : columnOrders) {
                     System.out.println("\t" + column.getIndex() + " - " + column.getLabel());
                 }
+
+
 
 
                 // calling the getColumnSubset method and create a object containing the SDRF data bar all fields such as Term Source REF following a Protocol REF
@@ -527,7 +534,7 @@ public class MAGETabSDRFLoader {
 
 
                         if (columnNames[columnIndex].equalsIgnoreCase("characteristics [organism]")) {
-                            columnNames[columnIndex] = "Characteristics [organism]";
+                            columnNames[columnIndex] = "Characteristics[organism]";
                         }
                         studySampleHeaders += columnNames[columnIndex] + "\t";
                     }
@@ -557,16 +564,56 @@ public class MAGETabSDRFLoader {
 
                         if (columnNames[columnIndex].equalsIgnoreCase("Hybridization Name")) {
                             columnNames[columnIndex] = "Hybridization Assay Name";
-                        } else if (columnNames[columnIndex].equalsIgnoreCase("Comment [FASTQ_URI]")) {
-                            columnNames[columnIndex] = "Raw Data File";
-                        } else if (columnNames[columnIndex].equalsIgnoreCase("Comment [Platform_title]")) {
-                            columnNames[columnIndex] = "Parameter Value[sequencing instrument]";
+                            studyAssayHeaders += columnNames[columnIndex] + "\t";
+                        }
 
-                        } else if (columnNames[columnIndex].startsWith("FactorValue ")) {
+                        //Here in case Sequencing is used (tt>=) we replace MAGE-TAB Labeled Extract Name field with Protocol REF
+                        else if ( (columnNames[columnIndex].equalsIgnoreCase("Labeled Extract Name")) && (tt >=0)) {
+                            columnNames[columnIndex] = "Protocol REF";
+                            studyAssayHeaders += columnNames[columnIndex] + "\t";
+                        }
+
+                        //Here in case Sequencing is used (tt>=) we replace MAGE-TAB Label field with Parameter Value[library layout]
+                        else if ((columnNames[columnIndex].equalsIgnoreCase("Label"))  && (tt >=0)) {
+                            columnNames[columnIndex] = "Parameter Value[library layout]";
+                            studyAssayHeaders += columnNames[columnIndex] + "\t";
+                        }
+                        //Here in case Sequencing is used (tt>=) we replace MAGE-TAB Technology Type field with Parameter Value[library layout]
+                        else if ((columnNames[columnIndex].equalsIgnoreCase("Technology Type"))  && (tt >=0)) {
+                            columnNames[columnIndex] = "Parameter Value[mid]";
+                            studyAssayHeaders += columnNames[columnIndex] + "\t";
+                        }
+                        //Here in case Sequencing is used (tt>=) we replace MAGE-TAB Technology Type field with Parameter Value[library layout]
+                        else if ((columnNames[columnIndex].equalsIgnoreCase("comment [platform_title]"))  && (tt >=0)) {
+                            columnNames[columnIndex] = "Parameter Value[sequencing instrument]";
+                            studyAssayHeaders += columnNames[columnIndex] + "\t";
+                        }
+
+                        //Here in case Sequencing is used (tt>=) we replace MAGE-TAB Labeled Extract Name field with Protocol REF
+                        else if ( (columnNames[columnIndex].equalsIgnoreCase("Scan Name")) && (tt >=0)) {
+                            columnNames[columnIndex] = "Data Transformation Name";
+                            studyAssayHeaders += columnNames[columnIndex] + "\t";
+                        }
+
+                        else if (columnNames[columnIndex].equalsIgnoreCase("comment [FASTQ_URI]")) {
+                            columnNames[columnIndex] = "Raw Data File";
+                             studyAssayHeaders += columnNames[columnIndex] + "\t";
+                        }
+
+                         else if ((columnNames[columnIndex].equalsIgnoreCase("Derived Array Data File")) && (tt >=0)){
+                            columnNames[columnIndex] = "Derived Data File";
+                             studyAssayHeaders += columnNames[columnIndex] + "\t";
+                        }
+
+
+                        else if (columnNames[columnIndex].startsWith("FactorValue "))  {
                             columnNames[columnIndex]=columnNames[columnIndex].toLowerCase();
                             columnNames[columnIndex]=columnNames[columnIndex].replaceAll("factorvalue ","Factor Value");
+                           studyAssayHeaders += columnNames[columnIndex] + "\t";
                         }
+                        else {
                         studyAssayHeaders += columnNames[columnIndex] + "\t";
+                        }
                     }
                 }
 

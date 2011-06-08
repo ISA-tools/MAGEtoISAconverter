@@ -1,7 +1,6 @@
 package org.isatools.magetoisatab.io;
 
 
-
 import com.sun.tools.javac.util.Pair;
 import org.apache.log4j.Logger;
 
@@ -15,16 +14,20 @@ import java.io.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
 
 /**
- A class to convert MAGE-TAB idf file to an ISA-TAB investigation file.
- The input can be either an ArrayExpress Accession number or the full address of a file on a local file system.
- The output is an ISA-TAB investigation file.
-  TODO: implement testing structure of accession number s/E-\w+-\d+/
-  TODO: exception handling such as "access denied" or "file not found"
+ * Created by the ISA team
+ *
+ * @author Philippe Rocca-Serra (proccaserra@gmail.com)
+ *         <p/>
+ *         Date: 02/03/2011
+ *         Time: 18:02
+ */
 
+/**
+ * A class to convert MAGE-TAB idf file to an ISA-TAB investigation file.
+ * The input can be either an ArrayExpress Accession number or the full address of a file on a local file system.
+ * The output is an ISA-TAB investigation file.
  */
 
 public class MAGETabIDFLoader {
@@ -33,146 +36,197 @@ public class MAGETabIDFLoader {
 
     public static final Character TAB_DELIM = '\t';
 
-    public String userUrl;
+    public List<String> investigationLines;
 
+    //HashMap initialization to define canonical Study Publication block structure
+    public Map<Integer, String> IsaPublicationSection = new HashMap<Integer, String>() {
+        {
+            put(0, "Study Publication PubMed ID");
+            put(1, "Study Publication DOI");
+            put(2, "Study Publication Authors List");
+            put(3, "Study Publication Title");
+            put(4, "Study Publication Status");
+            put(5, "Study Publication Status Term Accession Number");
+            put(6, "Study Publication Status Term Source REF");
+        }
+    };
 
     public List<String> publicationLines;
 
-    public List<String> factorLines= new ArrayList<String>(){ {
-        add("Study Factor Name");
-        add("Study Factor Type");
-        add("Study Factor Type Term Accession Number");
-        add("Study Factor Type Term Source REF");
-    } };
-    public List<String> investigationLines;
     public List<String> studyDesc;
-
-    public List<String> designLines = new ArrayList<String>(){ {
-        add("Study Design Type");
-        add("Study Design Type Term Accession Number");
-        add("Study Design Type Term Source REF");
-    } };
-
-
-    public List<String> commentLines;
     public List<String> assaylines;
     public List<String> dateLines;
 
-    public List<String> ontoLines = new ArrayList<String>(){ {
-        add("Term Source Name");
-        add("Term Source File");
-        add("Term Source Version");
-        add("Term Source Description");
-    } };
+    public List<String> ontoLines = new ArrayList<String>() {
+        {
+            add("Term Source Name");
+            add("Term Source File");
+            add("Term Source Version");
+            add("Term Source Description");
+        }
+    };
 
+    public List<String> factorLines = new ArrayList<String>() {
+        {
+            add("Study Factor Name");
+            add("Study Factor Type");
+            add("Study Factor Type Term Accession Number");
+            add("Study Factor Type Term Source REF");
+        }
+    };
+
+    public List<String> designLines = new ArrayList<String>() {
+        {
+            add("Study Design Type");
+            add("Study Design Type Term Accession Number");
+            add("Study Design Type Term Source REF");
+        }
+    };
+
+   //HashMap initialization to define canonical block structure
+    public   Map<Integer, String> IsaProtocolSection = new HashMap<Integer, String>(){
+        {
+            put(0, "Study Protocol Name");
+            put(1, "Study Protocol Type");
+            put(2, "Study Protocol Type Term Accession Number");
+            put(3, "Study Protocol Type Term Source REF");
+            put(4, "Study Protocol Description");
+            put(5, "Study Protocol URI");
+            put(6, "Study Protocol Version");
+            put(7, "Study Protocol Parameters Name");
+            put(8, "Study Protocol Parameters Name Term Accession Number");
+            put(9, "Study Protocol Parameters Name Term Source REF");
+            put(10, "Study Protocol Components Name");
+            put(11, "Study Protocol Components Type");
+            put(12, "Study Protocol Components Type Term Accession Number");
+            put(13, "Study Protocol Components Type Term Source REF");
+        }
+    };
+
+
+    //HashMap initialization to define canonical block structure
+    public Map<Integer, String> IsaContactSection = new HashMap<Integer, String>(){
+        {
+            put(0, "Study Person Last Name");
+            put(1, "Study Person First Name");
+            put(2, "Study Person Mid Initials");
+            put(3, "Study Person Email");
+            put(4, "Study Person Phone");
+            put(5, "Study Person Fax");
+            put(6, "Study Person Address");
+            put(7, "Study Person Affiliation");
+            put(8, "Study Person Roles");
+            put(9, "Study Person Roles Term Accession Number");
+            put(10, "Study Person Roles Term Source REF");
+        }
+    };
 
     Map<InvestigationSections, List<String>> investigationSections;
+
 
 
     public MAGETabIDFLoader() {
         investigationSections = new HashMap<InvestigationSections, List<String>>();
     }
 
+
     public void loadidfTab(String url, String accnum) throws IOException {
 
         try {
 
+            File file = new File(url);
 
-           File file =  new File(url);
-
-            boolean success = (new File("data/"+accnum)).mkdir();
-                if (success) {
+            boolean success = (new File("data/" + accnum)).mkdirs();
+            if (success) {
                 System.out.println("Directory: " + accnum + " created");
             }
 
             if (file.exists()) {
 
-            Scanner sc = new Scanner(file);
+                Scanner sc = new Scanner(file);
 
-            String line;
+                String line;
 
-            Pattern commentregex = Pattern.compile("^Comment");
+                while (sc.hasNextLine()) {
 
+                    if ((line = sc.nextLine()) != null) {
 
-            while (sc.hasNextLine()) {
+                        if (line.startsWith("Protocol")) {
 
-                if ((line = sc.nextLine()) != null) {
+                            line = line.replaceFirst("Protocol", "Study Protocol");
+                            if (!investigationSections.containsKey(InvestigationSections.STUDY_PROTOCOL_SECTION)) {
+                                investigationSections.put(InvestigationSections.STUDY_PROTOCOL_SECTION, new ArrayList<String>());
+                            }
 
-                    Matcher commentmatcher = commentregex.matcher(line);
-                    //Matcher qcmatcher = qcregex.matcher(line);
+                            investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION).add(line);
+                        }
+                        else if (line.startsWith("Experiment Desc")) {
 
-                    if (line.startsWith("Protocol")) {
+                            line = line.replaceFirst("Experiment", "Study");
+                            if (studyDesc == null) {
+                                studyDesc = new ArrayList<String>();
+                            }
+                            studyDesc.add(line);
+                        }
+                        else if (line.startsWith("Person")) {
 
-                        line = line.replaceFirst("Protocol", "Study Protocol");
-                        if (!investigationSections.containsKey(InvestigationSections.STUDY_PROTOCOL_SECTION)) {
-                            investigationSections.put(InvestigationSections.STUDY_PROTOCOL_SECTION, new ArrayList<String>());
+                            line = line.replaceFirst("Person", "Study Person");
+                            if (!investigationSections.containsKey(InvestigationSections.STUDY_CONTACT_SECTION)) {
+                                investigationSections.put(InvestigationSections.STUDY_CONTACT_SECTION, new ArrayList<String>());
+                            }
+
+                            investigationSections.get(InvestigationSections.STUDY_CONTACT_SECTION).add(line);
+                        }
+                        else if (line.startsWith("PubMed")) {
+
+                            line = line.replaceFirst("PubMed", "Study PubMed");
+                            if (publicationLines == null) {
+                                publicationLines = new ArrayList<String>();
+                            }
+                            publicationLines.add(line);
                         }
 
-                        investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION).add(line);
+                        //This is to handle ArrayExpress GEO to MAGE converter propagating PubMed ID to the Publication DOI field
+                        else if (line.startsWith("Publication DOI") && line.contains(".")){
 
-
-                    } else if (line.startsWith("Experiment Desc")) {
-
-                        line = line.replaceFirst("Experiment", "Study");
-                        if (studyDesc == null) {
-                            studyDesc = new ArrayList<String>();
+                            line = line.replaceFirst("Publication", "Study Publication DOI");
+                            if (publicationLines == null) {
+                                publicationLines = new ArrayList<String>();
+                            }
+                            publicationLines.add(line);
                         }
-                        studyDesc.add(line);
+                        else if ( (line.startsWith("Publication")) && !(line.contains("DOI"))){
 
-                    } else if (line.startsWith("Person")) {
-
-                        line = line.replaceFirst("Person", "Study Person");
-                        if (!investigationSections.containsKey(InvestigationSections.STUDY_CONTACT_SECTION)) {
-                            investigationSections.put(InvestigationSections.STUDY_CONTACT_SECTION, new ArrayList<String>());
+                            line = line.replaceFirst("Publication", "Study Publication");
+                            if (publicationLines == null) {
+                                publicationLines = new ArrayList<String>();
+                            }
+                            publicationLines.add(line);
                         }
 
-                        investigationSections.get(InvestigationSections.STUDY_CONTACT_SECTION).add(line);
-
-                    } else if (line.startsWith("PubMed")) {
-                        line = line.replaceFirst("PubMed", "Study PubMed");
-                        if (publicationLines == null)   {
-                            publicationLines = new ArrayList<String>();
+                        //Now Dealing with element from Protocol Section
+                        else if (line.startsWith("Experimental Factor Name")) {
+                            line = line.toLowerCase();
+                            line = line.replaceFirst("experimental factor name", "Study Factor Name");
+                            factorLines.set(0, line);
                         }
-                         publicationLines.add(line);
-
-
-                    } else if (line.startsWith("Publication")) {
-
-                        line = line.replaceFirst("Publication", "Study Publication");
-                        if (publicationLines == null)   {
-                            publicationLines = new ArrayList<String>();
+                        else if (line.startsWith("Experimental Factor Type")) {
+                            line = line.toLowerCase();
+                            line = line.replaceFirst("experimental factor type", "Study Factor Type");
+                            factorLines.set(1, line);
                         }
-                         publicationLines.add(line);
-
-
-                    } else if (line.startsWith("Experimental Factor Name")) {
-                        line = line.toLowerCase();
-                        line = line.replaceFirst("experimental factor name", "Study Factor Name");
-                         factorLines.set(0,line);
-
-                    }
-                     else if (line.startsWith("Experimental Factor Type")) {
-                        line = line.toLowerCase();
-                        line = line.replaceFirst("experimental factor type", "Study Factor Type");
-                         factorLines.set(1, line);
-
-
-                    }
-                    else if (line.endsWith("Factor Term Accession")) {
-                        line = line.replaceFirst("Experimental", "Study");
-                         factorLines.set(2,line);
-
-                    }
-                    else if (line.endsWith("Factor Term Source REF")) {
-                        line = line.replaceFirst("Experimental", "Study");
-                         factorLines.set(3,line);
-
-                    }
-                    else if ( (line.contains("Experimental Design")) && (!(line.contains("Experimental Design Term")))) {
-
-                        line = line.replaceFirst("Experimental Design", "Study Design Type");
-                        designLines.set(0,line);
-                    }
+                        else if (line.endsWith("Factor Term Accession")) {
+                            line = line.replaceFirst("Experimental", "Study");
+                            factorLines.set(2, line);
+                        }
+                        else if (line.endsWith("Factor Term Source REF")) {
+                            line = line.replaceFirst("Experimental", "Study");
+                            factorLines.set(3, line);
+                        }
+                        else if ((line.contains("Experimental Design")) && (!(line.contains("Experimental Design Term")))) {
+                            line = line.replaceFirst("Experimental Design", "Study Design Type");
+                            designLines.set(0, line);
+                        }
 //                    else if (line.startsWith("Experimental Design Term Accession")) {
 //                        line=line.replaceAll("Experimental Design", "Study Design Type");
 //                        designLines.set(1,line);
@@ -183,120 +237,107 @@ public class MAGETabIDFLoader {
 //                        designLines.set(2,line);
 //                    }
 
-                    else if (line.startsWith("Comment[AEExperimentType")) {
-                        System.out.println("Alternative Design Tag found at: " + line);
-                        line=line.replace("Comment[AEExperimentType]", "Study Design Type");
-                         designLines.set(0, line);
-                    }
-
-
-                    else if (line.startsWith("SDRF File")) {
-                        line = line.replaceFirst("SDRF File", "Study Assay File Name");
-                        if (assaylines == null) {
-                            assaylines = new ArrayList<String>();
-                        }
-                        assaylines.add(line);
-
-
-                    } else if (line.startsWith("Investigation")) {
-
-                        line = line.replaceFirst("Investigation", "Study");
-                        if (investigationLines == null) {
-                            investigationLines = new ArrayList<String>();
+                        //This bit is used to recover information for setting ISA MT and TT in case no Experimental Design is found
+                        else if (line.startsWith("Comment[AEExperimentType")) {
+                            System.out.println("Alternative Design Tag found at: " + line);
+                            line = line.replace("Comment[AEExperimentType]", "Study Design Type");
+                            designLines.set(0, line);
                         }
 
-                        investigationLines.add(line);
 
-
-                    } else if (line.startsWith("Public")) {
-                        line = line.replaceFirst("Public", "Study Public");
-                        if (dateLines == null) {
-                            dateLines = new ArrayList<String>();
+                        else if (line.startsWith("SDRF File")) {
+                            line = line.replaceFirst("SDRF File", "Study Assay File Name");
+                            if (assaylines == null) {
+                                assaylines = new ArrayList<String>();
+                            }
+                            assaylines.add(line);
                         }
-                        dateLines.add(line);
-
-
-                    } else if  (line.startsWith("Term Source Name")) {
-
-                        ontoLines.set(0, line);
-
-                    } else if  (line.startsWith("Term Source File")) {
-
-                        ontoLines.set(2, line);
-
-                    } else if  (line.startsWith("Term Source Version")) {
-
-                        ontoLines.set(1, line);
-
-
-                    } else if  (line.startsWith("Term Source Description")) {
-
-                        ontoLines.set(3, line);
-
-
-                    }
-                    else if (commentmatcher.find()) {
-
-                        System.out.println("comment line: " + line + "\n");
-                        if (commentLines == null) {
-                            commentLines = new ArrayList<String>();
+                        else if (line.startsWith("Investigation")) {
+                            line = line.replaceFirst("Investigation", "Study");
+                            if (investigationLines == null) {
+                                investigationLines = new ArrayList<String>();
+                            }
+                            investigationLines.add(line);
                         }
-                        commentLines.add(line);
+                        else if (line.startsWith("Public R")) {
+                            line = line.replaceFirst("Public", "Study Public");
+                            if (dateLines == null) {
+                                dateLines = new ArrayList<String>();
+                            }
+                            dateLines.add(line);
+                        }
 
+
+                        // looks for information about Ontology and Terminologies used in MAGE-TAB document
+                        else if (line.startsWith("Term Source Name")) {
+
+                            ontoLines.set(0, line);
+
+                        } else if (line.startsWith("Term Source File")) {
+
+                            ontoLines.set(2, line);
+
+                        } else if (line.startsWith("Term Source Version")) {
+
+                            ontoLines.set(1, line);
+
+                        } else if (line.startsWith("Term Source Description")) {
+
+                            ontoLines.set(3, line);
+
+                        }
 
                     } else {
-                        System.out.println("regular line: " + line + "\n");
+
+                        sc.close();
                     }
-
-                } else {
-
-                    sc.close();
                 }
-            }
 
-            PrintStream invPs = new PrintStream(new File("data/"+accnum+"/i_"+accnum+"_investigation.txt"));
-            invPs.println("ONTOLOGY SOURCE REFERENCE");
+                PrintStream invPs = new PrintStream(new File("data/" + accnum + "/i_" + accnum + "_investigation.txt"));
+
+                //Outputting the ISA-TAB Ontology Section
+                invPs.println("ONTOLOGY SOURCE REFERENCE");
                 for (String ontoLine : ontoLines) {
-
-                    invPs.println(ontoLine);
+                     invPs.println(ontoLine);
                 }
 
-           invPs.println("Term Source Description\n" +
-                    "INVESTIGATION\n" +
-                    "Investigation Identifier\n" +
-                    "Investigation Title\n" +
-                    "Investigation Description\n" +
-                    "Investigation Submission Date\n" +
-                    "Investigation Public Release Date\n" +
-                    "INVESTIGATION PUBLICATIONS\n" +
-                    "Investigation PubMed ID\n" +
-                    "Investigation Publication DOI\n" +
-                    "Investigation Publication Author list\n" +
-                    "Investigation Publication Title\n" +
-                    "Investigation Publication Status\n" +
-                    "Investigation Publication Status Term Accession Number\n" +
-                    "Investigation Publication Status Term Source REF\n" +
-                    "INVESTIGATION CONTACTS\n" +
-                    "Investigation Person Last Name\n" +
-                    "Investigation Person First Name\n" +
-                    "Investigation Person Mid Initials\n" +
-                    "Investigation Person Email\n" +
-                    "Investigation Person Phone\n" +
-                    "Investigation Person Fax\n" +
-                    "Investigation Person Address\n" +
-                    "Investigation Person Affiliation\n" +
-                    "Investigation Person Roles\n" +
-                    "Investigation Person Roles Term Accession Number\n" +
-                    "Investigation Person Roles Term Source REF\n" +
-                    "\nSTUDY\n" +
-                    "Study Identifier"+"\t"+accnum);
+                //Outputing ISA-TAB Investigation Section which is always empty as MAGE-TAB does not support this.
+                invPs.println("INVESTIGATION\n" +
+                        "Investigation Identifier\n" +
+                        "Investigation Title\n" +
+                        "Investigation Description\n" +
+                        "Investigation Submission Date\n" +
+                        "Investigation Public Release Date\n" +
+                        "INVESTIGATION PUBLICATIONS\n" +
+                        "Investigation PubMed ID\n" +
+                        "Investigation Publication DOI\n" +
+                        "Investigation Publication Author List\n" +
+                        "Investigation Publication Title\n" +
+                        "Investigation Publication Status\n" +
+                        "Investigation Publication Status Term Accession Number\n" +
+                        "Investigation Publication Status Term Source REF\n" +
+                        "INVESTIGATION CONTACTS\n" +
+                        "Investigation Person Last Name\n" +
+                        "Investigation Person First Name\n" +
+                        "Investigation Person Mid Initials\n" +
+                        "Investigation Person Email\n" +
+                        "Investigation Person Phone\n" +
+                        "Investigation Person Fax\n" +
+                        "Investigation Person Address\n" +
+                        "Investigation Person Affiliation\n" +
+                        "Investigation Person Roles\n" +
+                        "Investigation Person Roles Term Accession Number\n" +
+                        "Investigation Person Roles Term Source REF\n" +
+                        "\nSTUDY\n" +
+                        "Study Identifier" + "\t" + accnum);
 
 
                 for (String investigationLine : investigationLines) {
                     invPs.println(investigationLine);
                 }
 
-            invPs.println("Study Submission Date"+"\t"+"2011-03-01");
+
+                invPs.println("Study Submission Date");
 
                 for (String dateLine : dateLines) {
                     invPs.println(dateLine);
@@ -306,247 +347,181 @@ public class MAGETabIDFLoader {
                     invPs.println(aStudyDesc);
                 }
 
-            invPs.println("Study File Name" + "\t" + "s_" + accnum + "_studysample.txt");
+                invPs.println("Study File Name" + "\t" + "s_" + accnum + "_studysample.txt");
 
-            invPs.println("STUDY DESIGN DESCRIPTORS");
+                invPs.println("STUDY DESIGN DESCRIPTORS");
 
                 for (int i = 0; i < designLines.size(); i++) {
-
                     invPs.println(designLines.get(i));
                 }
 
 
-            invPs.println("STUDY PUBLICATIONS");
+                invPs.println("STUDY PUBLICATIONS");
 
-            Map<Integer,String> IsaPublicationSection = new HashMap<Integer,String>();
+                if (publicationLines.size() > 0) {
+                    for (String publicationLine : publicationLines) {
 
-              //HashMap initialization to define canonical block structure
-              IsaPublicationSection.put(0,"Study Publication PubMed ID");
-              IsaPublicationSection.put(1,"Study Publication DOI");
-              IsaPublicationSection.put(2,"Study Publication Authors List");
-              IsaPublicationSection.put(3,"Study Publication Title");
-              IsaPublicationSection.put(4,"Study Publication Status");
-              IsaPublicationSection.put(5,"Study Publication Status Term Accession Number");
-              IsaPublicationSection.put(6,"Study Publication Status Term Source REF");
-
-
-             if (publicationLines.size()>0) {
-                 for (String publicationLine : publicationLines) {
-
-                     if (publicationLine.contains("PubMed")) {
-                         IsaPublicationSection.put(0, publicationLine);
-                     }
-                     if (publicationLine.contains("DOI")) {
-                         IsaPublicationSection.put(1, publicationLine);
-                     }
-                     if (publicationLine.contains("List")) {
-                         IsaPublicationSection.put(2, publicationLine);
-                     }
-                     if (publicationLine.contains("Title")) {
-                         IsaPublicationSection.put(3, publicationLine);
-                     }
-                     if (publicationLine.endsWith("Status")) {
-                         IsaPublicationSection.put(4, publicationLine);
-                     }
-                     if (publicationLine.contains("Status Term Accession")) {
-                         IsaPublicationSection.put(5, publicationLine);
-                     }
-                     if (publicationLine.contains("Status Term Source")) {
-                         IsaPublicationSection.put(6, publicationLine);
-                     }
-                 }
-             }
-
-            //we now output the Publication Section of an ISA Study
-                for (Map.Entry<Integer, String> e : IsaPublicationSection.entrySet())
-                    invPs.println(e.getValue());
-
-
-            // Now Creating the Factor Section
-            invPs.println("STUDY FACTORS");
-
-                for (String factorLine : factorLines) {
-                    invPs.println(factorLine);
+                        if (publicationLine.contains("PubMed")) {
+                            IsaPublicationSection.put(0, publicationLine);
+                        }
+                        if (publicationLine.contains("DOI")) {
+                            IsaPublicationSection.put(1, publicationLine);
+                        }
+                        if (publicationLine.contains("List")) {
+                            IsaPublicationSection.put(2, publicationLine);
+                        }
+                        if (publicationLine.contains("Title")) {
+                            IsaPublicationSection.put(3, publicationLine);
+                        }
+                        if ((publicationLine.contains("Status")) && !(publicationLine.contains("Status Term"))){
+                            IsaPublicationSection.put(4, publicationLine);
+                        }
+                        if (publicationLine.contains("Status Term Accession")) {
+                            IsaPublicationSection.put(5, publicationLine);
+                        }
+                        if (publicationLine.contains("Status Term Source")) {
+                            IsaPublicationSection.put(6, publicationLine);
+                        }
+                    }
                 }
 
-
-            //Now creating the Assay Section:
-            invPs.println("STUDY ASSAYS");
-
-
-             // We are now trying to get the Measurement and Technology Type from MAGE annotation Experimental Design Type
+                //we now output the Publication Section of an ISA Study
+                    for (Map.Entry<Integer, String> e : IsaPublicationSection.entrySet())
+                        invPs.println(e.getValue());
 
 
-                System.out.println("expeirmental design is :" + designLines.get(0));
-             StringBuffer alpha = getMeasurementAndTech(designLines.get(0)).fst;
-             StringBuffer beta = getMeasurementAndTech(designLines.get(0)).snd;
+                // Now Creating the Factor Section
+                invPs.println("STUDY FACTORS");
+
+                    for (String factorLine : factorLines) {
+                        invPs.println(factorLine);
+                    }
 
 
-             // If this fails, we are falling back on checking MAGE-TAB Comment[AEExperimentType] line
-             //StringBuffer
+                //Now creating the Assay Section:
+                invPs.println("STUDY ASSAYS");
+
+                // We are now trying to get the Measurement and Technology Type from MAGE annotation Experimental Design Type
+                StringBuffer alpha = getMeasurementAndTech(designLines.get(0)).fst;
+                StringBuffer beta = getMeasurementAndTech(designLines.get(0)).snd;
+
+                // If this fails, we are falling back on checking MAGE-TAB Comment[AEExperimentType] line
+                invPs.println(alpha);
+                invPs.println("Study Assay Measurement Type Term Accession Number\n" +
+                              "Study Assay Measurement Type Term Source REF");
+
+                invPs.println(beta);
+                invPs.println("Study Assay Technology Type Term Accession Number\n" +
+                              "Study Assay Technology Type Term Source REF\n" +
+                              "Study Assay Technology Platform");
 
 
-             invPs.println(alpha);
-             invPs.println("Study Assay Measurement Type Term Accession Number\n" +
-                    "Study Assay Measurement Type Term Source REF");
-
-             invPs.println(beta);
-             invPs.println("Study Assay Technology Type Term Accession Number\n" +
-                    "Study Assay Technology Type Term Source REF\n" +
-                    "Study Assay Technology Platform");
+                invPs.println("Study Assay File Name" + "\t" + "a_" + accnum + "_assay.txt");
 
 
-            invPs.println("Study Assay File Name" + "\t" + "a_" + accnum + "_assay.txt");
+                //Now creating the Protocol section
+                invPs.println("STUDY PROTOCOLS");
 
 
+               if (investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION).size() > 0) {
 
+                    for (String protocolLine : investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION)) {
 
+                        if (protocolLine.contains("Name")) {
+                            IsaProtocolSection.put(0, protocolLine);
+                        }
 
+                        if (protocolLine.contains("Type")) {
+                            IsaProtocolSection.put(1, protocolLine);
+                        }
 
+                        if (protocolLine.contains("Accession")) {
+                            String tempAcc = protocolLine.replaceAll("Term Accession", "Type Term Accession");
+                            IsaProtocolSection.put(2, tempAcc);
+                        }
 
+                        if (protocolLine.contains("Term Source")) {
+                            String tempSource = protocolLine.replaceAll("Term Source", "Type Term Source");
+                            IsaProtocolSection.put(3, tempSource);
+                        }
 
-            //Now creating the Protocol section
-            invPs.println("STUDY PROTOCOLS");
+                        if (protocolLine.contains("Description")) {
+                            IsaProtocolSection.put(4, protocolLine);
+                        }
 
+                        if (protocolLine.endsWith("Parameters")) {
 
+                            String tempParam = protocolLine.replaceAll("Parameters", "Parameters Name");
+                            IsaProtocolSection.put(5, tempParam);
+                        }
 
-             Map<Integer,String> IsaProtocolSection = new HashMap<Integer,String>();
+                        if ((protocolLine.contains("Software")) || (protocolLine.contains("Hardware"))) {
 
-              //HashMap initialization to define canonical block structure
-              IsaProtocolSection.put(0,"Study Protocol Name");
-              IsaProtocolSection.put(1,"Study Protocol Type");
-              IsaProtocolSection.put(2,"Study Protocol Type Term Accession Number");
-              IsaProtocolSection.put(3,"Study Protocol Type Term Source REF");
-              IsaProtocolSection.put(4,"Study Protocol Description");
-              IsaProtocolSection.put(5,"Study Protocol URI");
-              IsaProtocolSection.put(6,"Study Protocol Version");
-              IsaProtocolSection.put(7,"Study Protocol Parameters Name");
-              IsaProtocolSection.put(8,"Study Protocol Parameters Name Term Accession Number");
-              IsaProtocolSection.put(9,"Study Protocol Parameters Name Term Source REF");
-              IsaProtocolSection.put(10,"Study Protocol Components Name");
-              IsaProtocolSection.put(11,"Study Protocol Components Type");
-              IsaProtocolSection.put(12,"Study Protocol Components Type Term Accession Number");
-              IsaProtocolSection.put(13,"Study Protocol Components Type Term Source REF");
-
-             if (investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION).size() >0) {
-
-                 for (String protocolLine : investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION)) {
-
-                     if (protocolLine.contains("Name")) {
-                         IsaProtocolSection.put(0, protocolLine);
-                     }
-
-                     if (protocolLine.contains("Type")) {
-
-                         IsaProtocolSection.put(1, protocolLine);
-                     }
-                     if (protocolLine.contains("Accession")) {
-                         String tempAcc = protocolLine.replaceAll("Term Accession", "Type Term Accession");
-                         IsaProtocolSection.put(2, tempAcc);
-                     }
-                     if (protocolLine.contains("Term Source")) {
-                         String tempSource = protocolLine.replaceAll("Term Source", "Type Term Source");
-                         IsaProtocolSection.put(3, tempSource);
-                     }
-                     if (protocolLine.contains("Description")) {
-                         IsaProtocolSection.put(4, protocolLine);
-                     }
-
-                     if (protocolLine.endsWith("Parameters")) {
-
-                         String tempParam = protocolLine.replaceAll("Parameters", "Parameters Name");
-                         IsaProtocolSection.put(5, tempParam);
-                     }
-
-                     if ((protocolLine.contains("Software")) || (protocolLine.contains("Hardware"))) {
-
-                         String tempComponent = protocolLine.replaceAll("Software", "Components Name");
-                          tempComponent = tempComponent.replaceAll("Hardware", "Components Name");
-                         IsaProtocolSection.put(10, tempComponent);
-                     }
-                 }
-            }
+                            String tempComponent = protocolLine.replaceAll("Software", "Components Name");
+                            tempComponent = tempComponent.replaceAll("Hardware", "Components Name");
+                            IsaProtocolSection.put(10, tempComponent);
+                        }
+                    }
+                }
 
                 //we now output the Protocol Section of an ISA Study
                 for (Map.Entry<Integer, String> e : IsaProtocolSection.entrySet())
                     invPs.println(e.getValue());
 
 
+                // Let's now deal with the Contact Information Section
+                invPs.println("STUDY CONTACTS");
 
-            // Let's now deal with the Contact Information Section
+                if (investigationSections.get(InvestigationSections.STUDY_CONTACT_SECTION).size() > 0) {
 
-            invPs.println("STUDY CONTACTS");
+                    for (String contactLine : investigationSections.get(InvestigationSections.STUDY_CONTACT_SECTION)) {
 
-            Map<Integer,String> IsaContactSection = new HashMap<Integer,String>();
+                        if (contactLine.contains("Last")) {
+                            IsaContactSection.put(0, contactLine);
+                        }
+                        if (contactLine.contains("First")) {
+                            IsaContactSection.put(1, contactLine);
+                        }
+                        if (contactLine.contains("Mid")) {
+                            IsaContactSection.put(2, contactLine);
+                        }
+                        if (contactLine.contains("Email")) {
+                            IsaContactSection.put(3, contactLine);
+                        }
+                        if (contactLine.contains("Phone")) {
+                            IsaContactSection.put(4, contactLine);
+                        }
+                        if (contactLine.contains("Fax")) {
+                            IsaContactSection.put(5, contactLine);
+                        }
+                        if (contactLine.contains("Address")) {
+                            IsaContactSection.put(6, contactLine);
+                        }
+                        if (contactLine.contains("Affiliation")) {
+                            IsaContactSection.put(7, contactLine);
+                        }
+                        if ((contactLine.contains("Roles") && !(contactLine.contains("Roles Term")))) {
 
-              //HashMap initialization to define canonical block structure
-              IsaContactSection.put(0,"Study Person Last Name");
-              IsaContactSection.put(1,"Study Person First Name");
-              IsaContactSection.put(2,"Study Person Mid Initials");
-              IsaContactSection.put(3,"Study Person Email");
-              IsaContactSection.put(4,"Study Person Phone");
-              IsaContactSection.put(5,"Study Person Fax");
-              IsaContactSection.put(6,"Study Person Address");
-              IsaContactSection.put(7,"Study Person Affiliation");
-              IsaContactSection.put(8,"Study Person Roles");
-              IsaContactSection.put(9,"Study Person Roles Term Accession Number");
-              IsaContactSection.put(10,"Study Person Roles Term Source REF");
+                            IsaContactSection.put(8, contactLine);
+                        }
+                        if (contactLine.contains("Roles Term Accession")) {
 
+                            IsaContactSection.put(9, contactLine);
+                        }
+                        if (contactLine.contains("Roles Term Source")) {
 
-             if (investigationSections.get(InvestigationSections.STUDY_CONTACT_SECTION).size()>0) {
+                            IsaContactSection.put(10, contactLine);
+                        }
+                    }
+                }
 
-                 for (String contactLine : investigationSections.get(InvestigationSections.STUDY_CONTACT_SECTION)) {
-
-                     if (contactLine.contains("Last")) {
-                         IsaContactSection.put(0, contactLine);
-                     }
-                     if (contactLine.contains("First")) {
-                         IsaContactSection.put(1, contactLine);
-                     }
-                     if (contactLine.contains("Mid")) {
-                         IsaContactSection.put(2, contactLine);
-                     }
-                     if (contactLine.contains("Email")) {
-                         IsaContactSection.put(3, contactLine);
-                     }
-                     if (contactLine.contains("Phone")) {
-                         IsaContactSection.put(4, contactLine);
-                     }
-                     if (contactLine.contains("Fax")) {
-                         IsaContactSection.put(5, contactLine);
-                     }
-                     if (contactLine.contains("Address")) {
-                         IsaContactSection.put(6, contactLine);
-                     }
-                     if (contactLine.contains("Affiliation")) {
-                         IsaContactSection.put(7, contactLine);
-                     }
-                     if ((contactLine.contains("Roles") && !(contactLine.contains("Roles Term")))) {
-
-                         IsaContactSection.put(8, contactLine);
-                     }
-                     if (contactLine.contains("Roles Term Accession")) {
-
-                         IsaContactSection.put(9, contactLine);
-                     }
-                     if (contactLine.contains("Roles Term Source")) {
-
-                         IsaContactSection.put(10, contactLine);
-                     }
-
-
-                 }
-             } else { System.out.println("life sucks\n");}
-
-
-              //we now output the Contact Section of an ISA Study
+                //we now output the Contact Section of an ISA Study
                 for (Map.Entry<Integer, String> e : IsaContactSection.entrySet())
                     invPs.println(e.getValue());
 
 
-
             } else {
-            System.out.println("ERROR: File not found");
+                System.out.println("ERROR: File not found");
             }
 
         } catch (FileNotFoundException e) {
@@ -558,12 +533,12 @@ public class MAGETabIDFLoader {
     }
 
 
-
     /**
      * A method that uses MAGE-TAB Experiment Design information to deduce ISA Measurement and Technology Types.
+     *
      * @param line
-     * @return  A Pair of Strings containing the Measurement and Technology Types to be output
-     * TODO: rely on an xml configuration file to instead of hard coded values -> easier to maintain in case of changes in ArrayExpress terminology
+     * @return A Pair of Strings containing the Measurement and Technology Types to be output
+     *         TODO: rely on an xml configuration file to instead of hard coded values -> easier to maintain in case of changes in ArrayExpress terminology
      */
 
     private Pair<StringBuffer, StringBuffer> getMeasurementAndTech(String line) {
@@ -578,7 +553,6 @@ public class MAGETabIDFLoader {
         TechnologiesAsString.append("Study Assay Technology Type\t");
 
         Pair<StringBuffer, StringBuffer> resultMtTt = new Pair<StringBuffer, StringBuffer>(MeasurementsAsString, TechnologiesAsString);
-
 
 
         if (line.matches("(?i).*ChIP-Chip.*")) {
@@ -617,8 +591,6 @@ public class MAGETabIDFLoader {
             technologies.add("nucleotide sequencing");
 
         }
-
-
 
 
         int val = 0;
