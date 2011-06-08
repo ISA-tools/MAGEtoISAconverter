@@ -25,28 +25,32 @@ public class MAGETabObtain {
     /**
      * A Method that reads ask for an accession number and checks it is well formed.
      */
-    public static void readInput() {
+    public void readInput() {
 
         Scanner inputstr = new Scanner(System.in);
-        String userAccnum = null;
-        String idfUrl = null;
-        String sdrfUrl = null;
+
+        doConversion(inputstr.nextLine());
+    }
+
+    public void doConversion(String accessionNumber) {
+
+        String idfUrl, sdrfUrl;
 
         try {
-            userAccnum = new String(inputstr.nextLine());
+
             Pattern accnumregex = Pattern.compile("^E-[A-Z]{4,}-\\d+");
-            Matcher accnummatcher = accnumregex.matcher(userAccnum);
+            Matcher accnummatcher = accnumregex.matcher(accessionNumber);
 
             if (accnummatcher.find()) {
 
-                idfUrl = "http://www.ebi.ac.uk/arrayexpress/files/" + userAccnum + "/" + userAccnum + ".idf.txt";
-                sdrfUrl = "http://www.ebi.ac.uk/arrayexpress/files/" + userAccnum + "/" + userAccnum + ".sdrf.txt";
+                idfUrl = "http://www.ebi.ac.uk/arrayexpress/files/" + accessionNumber + "/" + accessionNumber + ".idf.txt";
+                sdrfUrl = "http://www.ebi.ac.uk/arrayexpress/files/" + accessionNumber + "/" + accessionNumber + ".sdrf.txt";
 
 
-                DownloadUtils.createDirectory(DownloadUtils.TMP_DIRECTORY + File.separator + userAccnum);
+                DownloadUtils.createDirectory(DownloadUtils.TMP_DIRECTORY + File.separator + accessionNumber);
 
-                String idfDownloadLocation = DownloadUtils.TMP_DIRECTORY + File.separator + userAccnum + File.separator + userAccnum + ".idf.txt";
-                String sdrfDownloadLocation = DownloadUtils.TMP_DIRECTORY + File.separator + userAccnum + File.separator + userAccnum + ".sdrf.txt";
+                String idfDownloadLocation = DownloadUtils.TMP_DIRECTORY + File.separator + accessionNumber + File.separator + accessionNumber + ".idf.txt";
+                String sdrfDownloadLocation = DownloadUtils.TMP_DIRECTORY + File.separator + accessionNumber + File.separator + accessionNumber + ".sdrf.txt";
 
                 DownloadUtils.downloadFile(idfUrl, idfDownloadLocation);
                 DownloadUtils.downloadFile(sdrfUrl, sdrfDownloadLocation);
@@ -54,12 +58,12 @@ public class MAGETabObtain {
 
                 System.out.println(idfUrl);
                 MAGETabIDFLoader idfloader = new MAGETabIDFLoader();
-                idfloader.loadidfTab(idfDownloadLocation, userAccnum);
+                idfloader.loadidfTab(idfDownloadLocation, accessionNumber);
 
 
                 System.out.println(sdrfUrl);
                 MAGETabSDRFLoader sdrfloader = new MAGETabSDRFLoader();
-                sdrfloader.loadsdrfTab(sdrfDownloadLocation, userAccnum);
+                sdrfloader.loadsdrfTab(sdrfDownloadLocation, accessionNumber);
 
 
             } else {

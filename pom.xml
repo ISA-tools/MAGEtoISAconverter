@@ -24,28 +24,44 @@
     <build>
         <finalName>MAGETabtoISATab</finalName>
         <plugins>
+
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <inherited>true</inherited>
+                <version>2.3.2</version>
                 <configuration>
                     <source>1.5</source>
                     <target>1.5</target>
+                    <executable>apt</executable>
+                    <fork>true</fork>
+                    <debug>true</debug>
+                    <compilerArguments>
+                        <s>${project.build.directory}</s>
+                    </compilerArguments>
+                    <meminitial>128m</meminitial>
+                    <maxmem>512m</maxmem>
                 </configuration>
             </plugin>
 
-            <plugin>
+             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>2.2-beta-5</version>
+                <configuration>
 
+                    <archiverConfig>
+                        <duplicateBehavior>skip</duplicateBehavior>
+                    </archiverConfig>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+
+                </configuration>
                 <executions>
                     <execution>
                         <id>make-assembly</id>
-                        <!-- this is used for inheritance merges -->
                         <phase>package</phase>
-                        <!-- append to the packaging phase. -->
                         <goals>
                             <goal>attached</goal>
-                            <!-- goals == mojos -->
                         </goals>
                     </execution>
                 </executions>
