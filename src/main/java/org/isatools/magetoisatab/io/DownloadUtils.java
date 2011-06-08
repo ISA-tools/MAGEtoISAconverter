@@ -10,7 +10,9 @@ import java.net.URLConnection;
 public class DownloadUtils {
     private static Logger log = Logger.getLogger(DownloadUtils.class.getName());
 
-    public static String TMP_DIRECTORY = "DownloadedMAGEFiles";
+    public static String TMP_DIRECTORY = System.getProperty("java.io.tmpdir");
+
+    public static String CONVERTED_DIRECTORY = DownloadUtils.TMP_DIRECTORY + File.separator + "converted";
 
     public static boolean downloadFile(String fileLocation, String downloadLocation) {
         URL url;

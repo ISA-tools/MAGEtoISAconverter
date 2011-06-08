@@ -1,15 +1,10 @@
 package org.isatools.magetoisatab.io;
 
-
-import com.sun.tools.javac.util.Pair;
 import org.apache.log4j.Logger;
-
-import javax.swing.text.html.HTMLDocument;
-import java.beans.DesignMode;
+import org.isatools.magetoisatab.utils.ISAPair;
 import java.util.List;
 import java.util.*;
 import java.lang.*;
-import java.net.*;
 import java.io.*;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -136,7 +131,7 @@ public class MAGETabIDFLoader {
 
             File file = new File(url);
 
-            boolean success = (new File("data/" + accnum)).mkdirs();
+            boolean success = (new File(DownloadUtils.CONVERTED_DIRECTORY + File.separator + accnum)).mkdirs();
             if (success) {
                 System.out.println("Directory: " + accnum + " created");
             }
@@ -293,7 +288,8 @@ public class MAGETabIDFLoader {
                     }
                 }
 
-                PrintStream invPs = new PrintStream(new File("data/" + accnum + "/i_" + accnum + "_investigation.txt"));
+                PrintStream invPs = new PrintStream(new File(
+                        DownloadUtils.CONVERTED_DIRECTORY + File.separator + accnum + "/i_" + accnum + "_investigation.txt"));
 
                 //Outputting the ISA-TAB Ontology Section
                 invPs.println("ONTOLOGY SOURCE REFERENCE");
@@ -541,7 +537,7 @@ public class MAGETabIDFLoader {
      *         TODO: rely on an xml configuration file to instead of hard coded values -> easier to maintain in case of changes in ArrayExpress terminology
      */
 
-    private Pair<StringBuffer, StringBuffer> getMeasurementAndTech(String line) {
+    private ISAPair<StringBuffer, StringBuffer> getMeasurementAndTech(String line) {
 
         List<String> measurements = new ArrayList<String>();
         List<String> technologies = new ArrayList<String>();
@@ -552,7 +548,7 @@ public class MAGETabIDFLoader {
         MeasurementsAsString.append("Study Assay Measurement Type\t");
         TechnologiesAsString.append("Study Assay Technology Type\t");
 
-        Pair<StringBuffer, StringBuffer> resultMtTt = new Pair<StringBuffer, StringBuffer>(MeasurementsAsString, TechnologiesAsString);
+        ISAPair<StringBuffer, StringBuffer> resultMtTt = new ISAPair<StringBuffer, StringBuffer>(MeasurementsAsString, TechnologiesAsString);
 
 
         if (line.matches("(?i).*ChIP-Chip.*")) {

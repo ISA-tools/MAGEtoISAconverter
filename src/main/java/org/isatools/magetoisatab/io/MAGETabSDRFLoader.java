@@ -619,98 +619,17 @@ public class MAGETabSDRFLoader {
 
             }
 
-
-            //TODO: this bit is confusing -> rewrite
-            //this code is only executed when sequencing dataset are fed in
-
-
             else {
 
                 System.out.println("REALLY?? Study Sample position is: " + firstNodePosition);
 
-//                if (columnNames != null) {
-//
-//
-//                    for (int columnIndex = 0; columnIndex < columnNames.length; columnIndex++) {
-//
-//
-//                        if (columnIndex == 0) {
-//                            studySampleHeaders += columnNames[columnIndex] + "\t";
-//                        }
-//
-//
-//                        else if ((columnIndex <= firstNodePosition - 1) && (columnIndex > 0)) {
-//
-//                            System.out.println("number is:" + columnIndex);
-//
-//                            if (columnNames[columnIndex].equalsIgnoreCase("description")) {
-//                            columnNames[columnIndex] = "Comment[description]";
-//                        }
-//
-//                            studySampleHeaders += columnNames[columnIndex] + "\t";
-//                        }
-//                        else if (columnIndex >= firstNodePosition) {
-//
-//                            //here, we align MAGE-TAB to ISA-Tab Assay Fields
-//                            if (columnNames[columnIndex].equalsIgnoreCase("Hybridization Name")) {
-//                                columnNames[columnIndex] = "Hybridization Assay Name";
-//                                studyAssayHeaders += columnNames[columnIndex] + "\t";
-//
-//                            }
-//                            else if (columnNames[columnIndex].equalsIgnoreCase("Assay Name")) {
-//                                columnNames[columnIndex] = "Assay Name";
-//                                studyAssayHeaders += columnNames[columnIndex] + "\t";
-//                            }
-//
-//                            //here, we cast MAGE Comment field into ISA-Tab Raw Data File
-//                            else if (columnNames[columnIndex].equalsIgnoreCase("Comment [FASTQ_URI]")) {
-//                                columnNames[columnIndex] = "Raw Data File";
-//                                studyAssayHeaders += columnNames[columnIndex] + "\t";
-//                            }
-//                            //here we deal with an ad-hoc field from MAGE-TAB only present when HTS is used
-//                            else if ((columnNames[columnIndex].equalsIgnoreCase("technology type"))) {
-//                                columnNames[columnIndex] = "Parameter Value[library layout]";
-//                                studyAssayHeaders += columnNames[columnIndex] + "\t";
-//                            }
-//
-//                            //here we recast a MAGE Comment into a more specific ISA-Tab entity
-//                            else if (columnNames[columnIndex].equalsIgnoreCase("Comment [Platform_title]")) {
-//                                columnNames[columnIndex] = "Parameter Value[sequencing instrument]";
-//                                studyAssayHeaders += columnNames[columnIndex] + "\t";
-//                            }
-//
-//
-//                            //Here we deal with unnecessary Material Node by MAGE-TAB
-//                            else if ( (columnNames[columnIndex].equalsIgnoreCase("Labeled Extract Name")) && (tt >=0)) {
-//                                System.out.println("unnecessary Term Source REF found at " + columnIndex);
-//                                columnNames[columnIndex] = "Protocol REF";
-//                                studyAssayHeaders += columnNames[columnIndex] + "\t";
-//                            }
-//
-//                            else if ((columnNames[columnIndex].equalsIgnoreCase("Label"))  && (tt >=0)) {
-//
-//                                columnNames[columnIndex] = "Parameter Value[immunoprecipitation antibody]";
-//                                studyAssayHeaders += columnNames[columnIndex] + "\t";
-//                            }
-//
-//
-//
-//
-//                            else {
-//                                studyAssayHeaders += columnNames[columnIndex] + "\t";
-//                            }
-//                        }
-//                    }
-
                     studySampleHeaders = studySampleHeaders + "Sample Name";
-                //}
             }
 
 
             //we print study_sample file
 
-            PrintStream studyPs = new PrintStream(new File("data/" + accnum + "/s_" + accnum + "_studysample.txt"));
-            System.out.println("data/" + accnum + "/s_" + accnum + "_studysample.txt");
+            PrintStream studyPs = new PrintStream(new File(DownloadUtils.CONVERTED_DIRECTORY + File.separator + accnum + "/s_" + accnum + "_studysample.txt"));
 
             studyPs.println(studySampleHeaders);
 
@@ -727,7 +646,7 @@ public class MAGETabSDRFLoader {
 
 
             //we print the assay file
-            PrintStream assayPs = new PrintStream(new File("data/" + accnum + "/a_" + accnum + "_assay.txt"));
+            PrintStream assayPs = new PrintStream(new File(DownloadUtils.CONVERTED_DIRECTORY + File.separator + accnum + "/a_" + accnum + "_assay.txt"));
 
             assayPs.println(studyAssayHeaders);
 

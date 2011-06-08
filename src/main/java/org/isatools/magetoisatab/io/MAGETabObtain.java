@@ -29,10 +29,20 @@ public class MAGETabObtain {
 
         Scanner inputstr = new Scanner(System.in);
 
-        doConversion(inputstr.nextLine());
+        try {
+            doConversion(inputstr.nextLine(), "Data");
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
     }
 
-    public void doConversion(String accessionNumber) {
+    public File doConversion(String accessionNumber) throws Exception {
+        return doConversion(accessionNumber, DownloadUtils.CONVERTED_DIRECTORY);
+    }
+
+    public File doConversion(String accessionNumber, String saveDirectory) throws Exception {
+
+        DownloadUtils.CONVERTED_DIRECTORY = saveDirectory;
 
         String idfUrl, sdrfUrl;
 
@@ -65,22 +75,19 @@ public class MAGETabObtain {
                 MAGETabSDRFLoader sdrfloader = new MAGETabSDRFLoader();
                 sdrfloader.loadsdrfTab(sdrfDownloadLocation, accessionNumber);
 
-
+                return new File(DownloadUtils.CONVERTED_DIRECTORY + File.separator + accessionNumber);
             } else {
 
-                System.out.println("Sorry, this does not seem to be a valid ArrayExpress accession number !");
+                throw new Exception("Sorry, this does not seem to be a valid ArrayExpress accession number !");
 
             }
 
         } catch (IOException ioe) {
             System.out.println("Caught an IO exception :-o");
             ioe.printStackTrace();
-        } catch (Exception e) {
-             e.printStackTrace();
-            System.out.println("Exception: could not read this");
         }
 
-        //return   idfUrl.toString();
+        return null;
     }
 
 

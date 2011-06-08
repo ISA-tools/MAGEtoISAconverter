@@ -18,6 +18,14 @@
             <organization>ISAtools team</organization>
             <organizationUrl>http://isa-tools.org</organizationUrl>
         </developer>
+
+         <developer>
+            <id>eamonnmag</id>
+            <name>Eamonn Maguire</name>
+            <email>eamonnmag@gmail.com</email>
+            <organization>ISAtools team</organization>
+            <organizationUrl>http://isa-tools.org</organizationUrl>
+        </developer>
     </developers>
 
 
