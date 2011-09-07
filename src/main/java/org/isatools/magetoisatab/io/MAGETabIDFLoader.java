@@ -1,7 +1,8 @@
 package org.isatools.magetoisatab.io;
 
 import org.apache.log4j.Logger;
-import org.isatools.magetoisatab.utils.ISAPair;
+import uk.ac.ebi.utils.collections.ISAPair;
+
 import java.util.List;
 import java.util.*;
 import java.lang.*;
@@ -222,15 +223,6 @@ public class MAGETabIDFLoader {
                             line = line.replaceFirst("Experimental Design", "Study Design Type");
                             designLines.set(0, line);
                         }
-//                    else if (line.startsWith("Experimental Design Term Accession")) {
-//                        line=line.replaceAll("Experimental Design", "Study Design Type");
-//                        designLines.set(1,line);
-//                    }
-//
-//                    else if (line.startsWith("Experimental Design Term Source")) {
-//                        line=line.replaceAll("Experimental Design", "Study Design Type");
-//                        designLines.set(2,line);
-//                    }
 
                         //This bit is used to recover information for setting ISA MT and TT in case no Experimental Design is found
                         else if (line.startsWith("Comment[AEExperimentType")) {
