@@ -6,7 +6,7 @@
 
     <groupId>org.isatools</groupId>
     <artifactId>MAGEToISATabConverter</artifactId>
-    <version>0.1</version>
+    <version>0.2</version>
     <name>MAGEToISATabConverter</name>
     <url>http://www.isa-tools.org</url>
 
@@ -19,7 +19,7 @@
             <organizationUrl>http://isa-tools.org</organizationUrl>
         </developer>
 
-         <developer>
+        <developer>
             <id>eamonnmag</id>
             <name>Eamonn Maguire</name>
             <email>eamonnmag@gmail.com</email>
@@ -51,7 +51,7 @@
                 </configuration>
             </plugin>
 
-             <plugin>
+            <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>2.2-beta-5</version>
                 <configuration>
@@ -131,6 +131,14 @@
         </dependency>
 
     </dependencies>
+
+    <distributionManagement>
+        <repository>
+            <id>oerc-repo</id>
+            <name>OeRC Maven repository</name>
+            <url>http://frog.oerc.ox.ac.uk:8080/artifactory/libs-release-local/</url>
+        </repository>
+    </distributionManagement>
 
 
 </project>

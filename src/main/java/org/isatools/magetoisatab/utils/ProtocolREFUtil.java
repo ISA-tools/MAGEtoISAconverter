@@ -75,28 +75,9 @@ public class ProtocolREFUtil {
             }
         }
 
-        for (int rowNumber : rowToProtocolValues.keySet()) {
-            System.out.println("Row # " + rowNumber);
-            for (int startIndex : rowToProtocolValues.get(rowNumber).keySet()) {
-                System.out.println("Was expecting " + candidates.get(startIndex) +
-                        ", instead I found " + rowToProtocolValues.get(rowNumber).get(startIndex).size());
 
-            }
-        }
 
         Map<Integer, List<String[]>> protocolBlocks = createNewProtocolBlock(rowToProtocolValues);
-
-        // at this point, we should now have the protocol blocks for reinsertion back into the List<String[]> object
-        for (int startIndex : protocolBlocks.keySet()) {
-            System.out.println("For start index " + startIndex);
-            for (String[] columnValues : protocolBlocks.get(startIndex)) {
-                for (String columnValue : columnValues) {
-                    System.out.print(columnValue);
-                }
-                System.out.print("\n");
-            }
-        }
-
 
         return reconstructSpreadsheetAfterProcessing(protocolBlocks, candidates, spreadsheet);
 
@@ -146,14 +127,9 @@ public class ProtocolREFUtil {
         values.addAll(protocolBlocks.keySet());
         Collections.sort(values);
 
-        System.out.println("Indexes to work on...");
-        for(Integer startIndex : values) {
-            System.out.println("\t" + startIndex);
-        }
-
         for (int startIndex = values.size() - 1; startIndex >= 0; startIndex--) {
             int rowCount = 0;
-            System.out.println("Performing replacement from startindex " + values.get(startIndex));
+
             if (protocolBlocks.get(values.get(startIndex)) != null) {
 
                 for (String[] columnValues : spreadsheet) {
@@ -179,15 +155,6 @@ public class ProtocolREFUtil {
                 }
 
                 protocolBlocks.remove(values.get(startIndex));
-
-                System.out.println("Processed spreadsheet after replacement of " + values.get(startIndex));
-
-                for (String[] columnValues : newSpreadsheet) {
-                    for (String columnValue : columnValues) {
-                        System.out.print(columnValue + "\t");
-                    }
-                    System.out.print("\n");
-                }
 
                 return reconstructSpreadsheetAfterProcessing(protocolBlocks, candidates, newSpreadsheet);
             }

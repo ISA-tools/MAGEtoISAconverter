@@ -4,16 +4,10 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-/**
- * Created by IntelliJ IDEA.
- * User: Philippe
- * Date: 16/05/2011
- * Time: 17:50
- * To change this template use File | Settings | File Templates.
- */
+
 public class Utils {
 
-    public static LinkedList<Column> createColumnOrderList(String[] columnNames) {
+    public static List<Column> createColumnOrderList(String[] columnNames) {
         LinkedList<Column> columnOrders = new LinkedList<Column>();
         for (int index = 0; index < columnNames.length; index++) {
             if (!columnNames[index].trim().equals("")) {
@@ -24,7 +18,7 @@ public class Utils {
         return columnOrders;
     }
 
-    public static int getIndexForValue(String value, LinkedList<Column> columnOrders) {
+    public static int getIndexForValue(String value, List<Column> columnOrders) {
         int count = 0;
 
         for (Column column : columnOrders) {
@@ -37,7 +31,7 @@ public class Utils {
         return -1;
     }
 
-    public static int[] createIndexArray(LinkedList<Column> columnOrders) {
+    public static int[] createIndexArray(List<Column> columnOrders) {
         int[] columnOrder = new int[columnOrders.size()];
 
         int count = 0;
