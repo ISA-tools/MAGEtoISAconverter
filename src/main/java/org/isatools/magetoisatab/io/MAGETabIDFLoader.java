@@ -37,9 +37,9 @@ public class MAGETabIDFLoader {
     //HashMap initialization to define canonical Study Publication block structure
     public Map<Integer, String> IsaPublicationSection = new HashMap<Integer, String>() {
         {
-            put(0, "Study Publication PubMed ID");
+            put(0, "Study PubMed ID");
             put(1, "Study Publication DOI");
-            put(2, "Study Publication Authors List");
+            put(2, "Study Publication Author List");
             put(3, "Study Publication Title");
             put(4, "Study Publication Status");
             put(5, "Study Publication Status Term Accession Number");

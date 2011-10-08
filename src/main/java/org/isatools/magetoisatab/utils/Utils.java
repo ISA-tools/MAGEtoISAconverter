@@ -48,15 +48,41 @@ public class Utils {
 
         List<String[]> cleanedData = new ArrayList<String[]>();
 
-        for(String[] line : spreadsheet) {
-            if(line.length > 0) {
-                if(!line[0].trim().equals("")) {
+        for (String[] line : spreadsheet) {
+            if (line.length > 0) {
+                if (!line[0].trim().equals("")) {
                     cleanedData.add(line);
                 }
             }
         }
 
         return cleanedData;
+    }
+
+    public static String[] correctColumnHeaders(String[] columnHeaders) {
+
+        for (int index = 0; index < columnHeaders.length; index++) {
+            // we take care of the MAGE-TAB Description field which sometimes shows up in AE output
+            if (columnHeaders[index].equalsIgnoreCase("description")) {
+                columnHeaders[index] = "Comment[description]";
+            }
+
+
+            if (columnHeaders[index].equalsIgnoreCase("characteristics [organism]")) {
+                columnHeaders[index] = "Characteristics[organism]";
+            }
+
+            if (columnHeaders[index].equalsIgnoreCase("LabeledExtract Name")) {
+                columnHeaders[index] = "Labeled Extract Name";
+            }
+
+            if (columnHeaders[index].contains("FactorValue")) {
+                columnHeaders[index] = columnHeaders[index].replace("FactorValue", "Factor Value");
+            }
+
+        }
+
+        return columnHeaders;
     }
 
 

@@ -8,6 +8,7 @@ import org.isatools.io.FileType;
 import org.isatools.io.Loader;
 import org.isatools.magetoisatab.utils.Column;
 import org.isatools.magetoisatab.utils.ProtocolREFUtil;
+
 import java.util.List;
 import java.util.*;
 import java.lang.*;
@@ -72,6 +73,8 @@ public class MAGETabSDRFLoader {
 
                 SpreadsheetManipulation manipulation = new SpreadsheetManipulation();
                 String[] columnNames = manipulation.getColumnHeaders(sheetData);
+
+                columnNames = Utils.correctColumnHeaders(columnNames);
 
                 // initialization of the ArrayList which will receive all fields to be kept which are not factor value fields
                 List<Integer> positions2keep = new ArrayList<Integer>();
@@ -449,15 +452,6 @@ public class MAGETabSDRFLoader {
                     //now dealing with descriptors that will go on the ISA study sample sheet, i.e. everything before the first Material Node after Source Node
                     if (columnIndex < firstNodePosition) {
 
-                        // we take care of the MAGE-TAB Description field which sometimes shows up in AE output
-                        if (columnNames[columnIndex].equalsIgnoreCase("description")) {
-                            columnNames[columnIndex] = "Comment[description]";
-                        }
-
-
-                        if (columnNames[columnIndex].equalsIgnoreCase("characteristics [organism]")) {
-                            columnNames[columnIndex] = "Characteristics[organism]";
-                        }
                         studySampleHeaders += columnNames[columnIndex] + "\t";
                     }
 
