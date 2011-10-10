@@ -71,8 +71,7 @@ public class MAGETabSDRFLoader {
                 // clean up the input file, removing lines with no data.
                 sheetData = Utils.cleanInput(sheetData);
 
-                SpreadsheetManipulation manipulation = new SpreadsheetManipulation();
-                String[] columnNames = manipulation.getColumnHeaders(sheetData);
+                String[] columnNames = SpreadsheetManipulation.getColumnHeaders(sheetData);
 
                 columnNames = Utils.correctColumnHeaders(columnNames);
 
@@ -108,10 +107,10 @@ public class MAGETabSDRFLoader {
                     }
                 }
 
-                sheetData = manipulation.getColumnSubset(sheetData, true, convertIntegers(positions2keep));
+                sheetData = SpreadsheetManipulation.getColumnSubset(sheetData, true, convertIntegers(positions2keep));
 
                 //getting the associated header row in order to perform identification of fields position prior to reordering
-                columnNames = manipulation.getColumnHeaders(sheetData);
+                columnNames = SpreadsheetManipulation.getColumnHeaders(sheetData);
 
                 List<Column> columnOrders = Utils.createColumnOrderList(columnNames);
 
@@ -135,7 +134,7 @@ public class MAGETabSDRFLoader {
                 }
 
                 // calling the getColumnSubset method and create a object containing the SDRF data bar all fields such as Term Source REF following a Protocol REF
-                List<String[]> sheetDataSubset = manipulation.getColumnSubset(sheetData, true, Utils.createIndexArray(columnOrders));
+                List<String[]> sheetDataSubset = SpreadsheetManipulation.getColumnSubset(sheetData, true, Utils.createIndexArray(columnOrders));
 
 
                 // now preparing to process the cleaned SDRF subset and remove all aberrant Protocol REF fields where applicable

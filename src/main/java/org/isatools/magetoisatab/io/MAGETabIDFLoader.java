@@ -1,7 +1,7 @@
 package org.isatools.magetoisatab.io;
 
 import org.apache.log4j.Logger;
-import uk.ac.ebi.utils.collections.ISAPair;
+import uk.ac.ebi.utils.collections.Pair;
 
 import java.util.List;
 import java.util.*;
@@ -526,10 +526,10 @@ public class MAGETabIDFLoader {
      *
      * @param line
      * @return A Pair of Strings containing the Measurement and Technology Types to be output
-     *         TODO: rely on an xml configuration file to instead of hard coded values -> easier to maintain in case of changes in ArrayExpress terminology
+     * TODO: rely on an xml configuration file to instead of hard coded values -> easier to maintain in case of changes in ArrayExpress terminology
      */
 
-    private ISAPair<StringBuffer, StringBuffer> getMeasurementAndTech(String line) {
+    private Pair<StringBuffer, StringBuffer> getMeasurementAndTech(String line) {
 
         List<String> measurements = new ArrayList<String>();
         List<String> technologies = new ArrayList<String>();
@@ -540,7 +540,7 @@ public class MAGETabIDFLoader {
         MeasurementsAsString.append("Study Assay Measurement Type\t");
         TechnologiesAsString.append("Study Assay Technology Type\t");
 
-        ISAPair<StringBuffer, StringBuffer> resultMtTt = new ISAPair<StringBuffer, StringBuffer>(MeasurementsAsString, TechnologiesAsString);
+        Pair<StringBuffer, StringBuffer> resultMtTt = new Pair<StringBuffer, StringBuffer>(MeasurementsAsString, TechnologiesAsString);
 
 
         if (line.matches("(?i).*ChIP-Chip.*")) {
