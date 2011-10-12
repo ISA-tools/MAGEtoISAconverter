@@ -53,14 +53,29 @@ public class MAGETabIDFLoader {
     public List<String> assaylines;
     public List<String> dateLines;
 
-    public List<String> ontoLines = new ArrayList<String>() {
+//    public List<String> ontoLines = new ArrayList<String>() {
+//        {
+//            add("Term Source Name");
+//            add("Term Source File");
+//            add("Term Source Version");
+//            add("Term Source Description");
+//        }
+//    };
+
+
+    public Map<Integer,String> IsaOntoSection = new HashMap<Integer,String>() {
         {
-            add("Term Source Name");
-            add("Term Source File");
-            add("Term Source Version");
-            add("Term Source Description");
+            put(0,"Term Source Name");
+            put(1,"Term Source File");
+            put(2,"Term Source Version");
+            put(3,"Term Source Description");
         }
     };
+
+
+
+
+
 
     public List<String> factorLines = new ArrayList<String>() {
         {
@@ -257,20 +272,19 @@ public class MAGETabIDFLoader {
 
                         // looks for information about Ontology and Terminologies used in MAGE-TAB document
                         else if (line.startsWith("Term Source Name")) {
-
-                            ontoLines.set(0, line);
+                            IsaOntoSection.put(0, line);
 
                         } else if (line.startsWith("Term Source File")) {
 
-                            ontoLines.set(2, line);
+                            IsaOntoSection.put(2, line);
 
                         } else if (line.startsWith("Term Source Version")) {
 
-                            ontoLines.set(1, line);
+                            IsaOntoSection.put(1, line);
 
                         } else if (line.startsWith("Term Source Description")) {
 
-                            ontoLines.set(3, line);
+                            IsaOntoSection.put(3, line);
 
                         }
 
@@ -284,10 +298,14 @@ public class MAGETabIDFLoader {
                         DownloadUtils.CONVERTED_DIRECTORY + File.separator + accnum + "/i_" + accnum + "_investigation.txt"));
 
                 //Outputting the ISA-TAB Ontology Section
-                invPs.println("ONTOLOGY SOURCE REFERENCE");
-                for (String ontoLine : ontoLines) {
-                     invPs.println(ontoLine);
-                }
+//                invPs.println("ONTOLOGY SOURCE REFERENCE");
+//                for (String ontoLine : ontoLines) {
+//                     invPs.println(ontoLine);
+//                }
+                for (Map.Entry<Integer, String> e : IsaOntoSection.entrySet())
+                                    invPs.println(e.getValue());
+
+
 
                 //Outputing ISA-TAB Investigation Section which is always empty as MAGE-TAB does not support this.
                 invPs.println("INVESTIGATION\n" +
@@ -578,7 +596,8 @@ public class MAGETabIDFLoader {
             measurements.add("protein-DNA binding site identification");
             technologies.add("nucleotide sequencing");
 
-        }
+        } else {}
+
 
 
         int val = 0;
