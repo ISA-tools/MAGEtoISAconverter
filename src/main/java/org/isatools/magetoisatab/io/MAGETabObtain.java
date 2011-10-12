@@ -72,6 +72,7 @@ public class MAGETabObtain {
 
 
                 System.out.println(sdrfUrl);
+
                 MAGETabSDRFLoader sdrfloader = new MAGETabSDRFLoader();
                 sdrfloader.loadsdrfTab(sdrfDownloadLocation, accessionNumber);
 

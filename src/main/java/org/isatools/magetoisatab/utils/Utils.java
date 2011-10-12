@@ -3,6 +3,8 @@ package org.isatools.magetoisatab.utils;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 public class Utils {
@@ -44,20 +46,46 @@ public class Utils {
 
     }
 
-    public static List<String[]> cleanInput(List<String[]> spreadsheet) {
+    public static List<String[]> cleanInput(List<String[]> spreadsheet, String geoAcc) {
+
+        geoAcc = extractGEOAccession(geoAcc);
 
         List<String[]> cleanedData = new ArrayList<String[]>();
 
+        boolean doGEOCleanup = geoAcc.startsWith("GSE") || geoAcc.startsWith("GDS");
+
         for (String[] line : spreadsheet) {
+
+            if (doGEOCleanup) {
+                for (int columnIndex = 0; columnIndex < line.length; columnIndex++) {
+                    line[columnIndex] = line[columnIndex].replace(geoAcc, "");
+                }
+            }
+
             if (line.length > 0) {
                 if (!line[0].trim().equals("")) {
                     cleanedData.add(line);
                 }
             }
+
+
         }
 
         return cleanedData;
     }
+
+    public static String extractGEOAccession(String accessionNumber) {
+        Pattern geoaccnumregex = Pattern.compile("-");
+        String[] items = geoaccnumregex.split(accessionNumber);
+
+        String geo_orig = accessionNumber;
+        if (items[1].contains("GEOD")) {
+            geo_orig = "GSE" + items[2];
+        }
+
+        return geo_orig;
+    }
+
 
     public static String[] correctColumnHeaders(String[] columnHeaders) {
 
@@ -78,6 +106,10 @@ public class Utils {
 
             if (columnHeaders[index].contains("FactorValue")) {
                 columnHeaders[index] = columnHeaders[index].replace("FactorValue", "Factor Value");
+            }
+
+            if (columnHeaders[index].contains("ArrayDesign")) {
+
             }
 
         }

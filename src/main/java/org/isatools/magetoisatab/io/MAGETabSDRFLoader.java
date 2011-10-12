@@ -69,7 +69,7 @@ public class MAGETabSDRFLoader {
                 List<String[]> sheetData = fileReader.loadSheet(url, FileType.TAB);
 
                 // clean up the input file, removing lines with no data.
-                sheetData = Utils.cleanInput(sheetData);
+                sheetData = Utils.cleanInput(sheetData, accnum);
 
                 String[] columnNames = SpreadsheetManipulation.getColumnHeaders(sheetData);
 
