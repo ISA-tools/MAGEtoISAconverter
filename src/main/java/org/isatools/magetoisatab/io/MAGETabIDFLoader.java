@@ -53,15 +53,6 @@ public class MAGETabIDFLoader {
     public List<String> assaylines;
     public List<String> dateLines;
 
-//    public List<String> ontoLines = new ArrayList<String>() {
-//        {
-//            add("Term Source Name");
-//            add("Term Source File");
-//            add("Term Source Version");
-//            add("Term Source Description");
-//        }
-//    };
-
 
     public Map<Integer,String> IsaOntoSection = new HashMap<Integer,String>() {
         {
@@ -297,11 +288,8 @@ public class MAGETabIDFLoader {
                 PrintStream invPs = new PrintStream(new File(
                         DownloadUtils.CONVERTED_DIRECTORY + File.separator + accnum + "/i_" + accnum + "_investigation.txt"));
 
-                //Outputting the ISA-TAB Ontology Section
-//                invPs.println("ONTOLOGY SOURCE REFERENCE");
-//                for (String ontoLine : ontoLines) {
-//                     invPs.println(ontoLine);
-//                }
+                invPs.println("ONTOLOGY SOURCE REFERENCE\n");
+
                 for (Map.Entry<Integer, String> e : IsaOntoSection.entrySet())
                                     invPs.println(e.getValue());
 
@@ -357,8 +345,8 @@ public class MAGETabIDFLoader {
 
                 invPs.println("STUDY DESIGN DESCRIPTORS");
 
-                for (int i = 0; i < designLines.size(); i++) {
-                    invPs.println(designLines.get(i));
+                for (String designLine : designLines) {
+                    invPs.println(designLine);
                 }
 
 
