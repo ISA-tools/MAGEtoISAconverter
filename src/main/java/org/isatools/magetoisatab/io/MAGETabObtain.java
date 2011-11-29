@@ -1,11 +1,10 @@
 package org.isatools.magetoisatab.io;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.isatools.magetoisatab.io.MAGETabIDFLoader;
 
 
 public class MAGETabObtain {
@@ -94,7 +93,19 @@ public class MAGETabObtain {
 
     public static void main(String[] argv) {
         MAGETabObtain mageReadFunction = new MAGETabObtain();
-        mageReadFunction.initialise();
+        if (argv.length > 0) {
+            try {
+                if (argv.length == 1) {
+                    mageReadFunction.doConversion(argv[0]);
+                } else {
+                    mageReadFunction.doConversion(argv[0], argv[1]);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            mageReadFunction.initialise();
+        }
     }
 
 }
