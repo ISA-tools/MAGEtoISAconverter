@@ -1,11 +1,10 @@
 package org.isatools.magetoisatab.io;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.isatools.magetoisatab.io.MAGETabIDFLoader;
 
 
 public class MAGETabObtain {
@@ -31,8 +30,11 @@ public class MAGETabObtain {
 
         try {
             doConversion(inputstr.nextLine(), "Data");
+
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+
+            System.out.println("ERROR MSG : " + e.getMessage());
+                    e.printStackTrace();
         }
     }
 
@@ -44,7 +46,7 @@ public class MAGETabObtain {
 
         DownloadUtils.CONVERTED_DIRECTORY = saveDirectory;
 
-        String idfUrl, sdrfUrl;
+        String idfUrl, sdrfUrl,hybSdrfUrl, seqSdrfUrl;
 
         try {
 
@@ -55,7 +57,8 @@ public class MAGETabObtain {
 
                 idfUrl = "http://www.ebi.ac.uk/arrayexpress/files/" + accessionNumber + "/" + accessionNumber + ".idf.txt";
                 sdrfUrl = "http://www.ebi.ac.uk/arrayexpress/files/" + accessionNumber + "/" + accessionNumber + ".sdrf.txt";
-
+                hybSdrfUrl= "http://www.ebi.ac.uk/arrayexpress/files/" + accessionNumber + "/" + accessionNumber + ".hyb.sdrf.txt";
+                seqSdrfUrl= "http://www.ebi.ac.uk/arrayexpress/files/" + accessionNumber + "/" + accessionNumber + ".seq.sdrf.txt";
 
                 DownloadUtils.createDirectory(DownloadUtils.TMP_DIRECTORY + File.separator + accessionNumber);
 
@@ -66,17 +69,20 @@ public class MAGETabObtain {
                 DownloadUtils.downloadFile(sdrfUrl, sdrfDownloadLocation);
 
 
-                System.out.println(idfUrl);
+                System.out.println("IDF found and downloaded: " + idfUrl);
                 MAGETabIDFLoader idfloader = new MAGETabIDFLoader();
                 idfloader.loadidfTab(idfDownloadLocation, accessionNumber);
 
 
-                System.out.println(sdrfUrl);
+                System.out.println("SDRF found and downloaded: " + sdrfUrl);
+
+
 
                 MAGETabSDRFLoader sdrfloader = new MAGETabSDRFLoader();
                 sdrfloader.loadsdrfTab(sdrfDownloadLocation, accessionNumber);
 
                 return new File(DownloadUtils.CONVERTED_DIRECTORY + File.separator + accessionNumber);
+
             } else {
 
                 throw new Exception("Sorry, this does not seem to be a valid ArrayExpress accession number !");
@@ -84,6 +90,7 @@ public class MAGETabObtain {
             }
 
         } catch (IOException ioe) {
+
             System.out.println("Caught an IO exception :-o");
             ioe.printStackTrace();
         }

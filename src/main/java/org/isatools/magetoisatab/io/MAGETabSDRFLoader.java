@@ -1,20 +1,22 @@
 package org.isatools.magetoisatab.io;
 
-//TODO: prppagate  factor values and cleanup
-
-import java.io.*;
+//TODO: propagate  factor values and cleanup
 
 import org.isatools.io.FileType;
 import org.isatools.io.Loader;
 import org.isatools.magetoisatab.utils.Column;
 import org.isatools.magetoisatab.utils.ProtocolREFUtil;
-
-import java.util.List;
-import java.util.*;
-import java.lang.*;
-
 import org.isatools.magetoisatab.utils.Utils;
 import org.isatools.manipulator.SpreadsheetManipulation;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.lang.Character;
+import java.lang.String;
+import java.lang.StringBuffer;
+import java.util.*;
 
 
 public class MAGETabSDRFLoader {
@@ -54,7 +56,8 @@ public class MAGETabSDRFLoader {
     public MAGETabSDRFLoader() {
 
         samples = new HashMap<Integer, String[]>();
-        assays = new HashSet<String[]>();
+
+         assays = new HashSet<String[]>();
     }
 
     public void loadsdrfTab(String url, String accnum) throws IOException {
@@ -87,7 +90,7 @@ public class MAGETabSDRFLoader {
 
                     if (!columnNames[columnIndex].trim().equals("")) {
 
-                        // we don't this
+                        // we don't need TERM SOURCE REF if they are found right after Protocol REF
                         if (!((columnNames[columnIndex].equalsIgnoreCase("term source ref"))
                                 && (columnNames[columnIndex - 1].equalsIgnoreCase("protocol ref")))) {
 
@@ -114,18 +117,51 @@ public class MAGETabSDRFLoader {
 
                 List<Column> columnOrders = Utils.createColumnOrderList(columnNames);
 
+                //where does Assay Name field appear?
                 int assayNameIndex = Utils.getIndexForValue("Assay Name", columnOrders);
+
+                //where does Derived Array Data File field appear?
                 int derivedArrayDataFileIndex = Utils.getIndexForValue("Derived Array Data File", columnOrders);
 
-                //fetching and moving the technology type field  if present
+                //scanning the header checking if it contains "Scan Name field"
+                int   scanNameIndex=Utils.getIndexForValue("Scan Name", columnOrders);
+
+
+                //System.out.println("SDRF Processing: assayName field found at location Index:"  + assayNameIndex);
+
+
+                // if present, fetching and moving the technology type field
                 if (tt >= 0) {
+
                     Column technology = columnOrders.remove(Utils.getIndexForValue("technology type", columnOrders));
                     columnOrders.add(assayNameIndex, technology);
 
-                    Column scanName = columnOrders.remove(Utils.getIndexForValue("Scan Name", columnOrders));
-                    columnOrders.add(derivedArrayDataFileIndex - 1, scanName);
+
+
+                    System.out.println("SDRF Processing: SCAN: " + scanNameIndex);
+
+
+
+//                    if ( (scanNameIndex<0)  || (derivedArrayDataFileIndex<0 ) ) {
+//                        System.out.println("SDRF Processing: NO SCAN FOUND in this file");
+//                    }
+
+                    if (derivedArrayDataFileIndex>0 && scanNameIndex>0){
+                        Column scanName = columnOrders.remove(Utils.getIndexForValue("Scan Name", columnOrders));
+                        columnOrders.add(derivedArrayDataFileIndex - 1, scanName);
+                    }
+                    else if (derivedArrayDataFileIndex==0 && scanNameIndex>0) {
+                        Column scanName = columnOrders.remove(Utils.getIndexForValue("Scan Name", columnOrders));
+                        columnOrders.add(assayNameIndex + 1, scanName);
+
+                    }
+
+
+                   //System.out.println("SDRF Processing: SCAN" + scanNameIndex);
 
                 }
+
+
 
                 //fetching and moving the platform title field if present
                 if (ptf >= 0) {
@@ -187,7 +223,7 @@ public class MAGETabSDRFLoader {
 
                                             if ((nextLine[i].equals("Hybridization Name")) || (nextLine[i].equals("Assay Name"))) {
                                                 nodeDepth = 4;
-                                                System.out.println("Hyb: First Node Found is: " + nextLine[i]);
+                                                System.out.println("SDRF Processing: Hyb: First Node Found is: " + nextLine[i]);
                                                 firstNodePosition = i;
                                                 break;   // we have found a Sample Name field, we can leave (but we need to handle the case where no such header is present...
                                             }
@@ -198,7 +234,7 @@ public class MAGETabSDRFLoader {
 
                                         if (nextLine[i].equals("Labeled Extract Name")) {
                                             nodeDepth = 3;
-                                            System.out.println("LE: First Node Found is: " + nextLine[i]);
+                                            System.out.println("SDRF Processing: LE: First Node Found is: " + nextLine[i]);
                                             firstNodePosition = i;
                                             break;   // we have found a Sample Name field, we can leave (but we need to handle the case where no such header is present...
                                         }
@@ -212,7 +248,7 @@ public class MAGETabSDRFLoader {
 
                                     if (nextLine[i].equals("Extract Name")) {
                                         nodeDepth = 2;
-                                        System.out.println("Extract: First Node Found is: " + nextLine[i]);
+                                        System.out.println("SDRF Processing:Extract: First Node Found is: " + nextLine[i]);
                                         firstNodePosition = i;
                                         break;   // we have found a Sample Name field, we can leave (but we need to handle the case where no such header is present...
                                     }
@@ -224,7 +260,7 @@ public class MAGETabSDRFLoader {
 
                                 if (nextLine[i].equals("Sample Name")) {
                                     nodeDepth = 1;
-                                    System.out.println("Sample: First Node Found is: " + nextLine[i]);
+                                    System.out.println("SDRF Processing: Sample: First Node Found is: " + nextLine[i]);
                                     firstNodePosition = i;
                                     break;   // we have found a Sample Name field, we can leave (but we need to handle the case where no such header is present...
                                 }
@@ -238,7 +274,7 @@ public class MAGETabSDRFLoader {
 
                             for (int i = 0; i < nextLine.length; i++) {
 
-                                System.out.println(nextLine[i]);
+                                System.out.println("SDRF Processing: "+ nextLine[i]);
                                 if (nextLine[i].equals("Factor Name")) {
 
                                     firstFactorPosition = i;
@@ -374,13 +410,13 @@ public class MAGETabSDRFLoader {
                         addStudySample(sampleRecord);
 
                     } else {
-                        System.out.println("SDRF lacks SAMPLE NAME header");
+                        System.out.println("SDRF Processing: SDRF lacks SAMPLE NAME header");
                     }
                     counter++;
                 }
                 printFiles(accnum);
             } else {
-                System.out.println("ERROR: file not found!");
+                System.out.println("SDRF Processing: ERROR: file not found!");
             }
 
         } catch (FileNotFoundException e) {
@@ -406,34 +442,34 @@ public class MAGETabSDRFLoader {
         }
     }
 
-    private Set<Integer> getColumnIndexForName(String columnName) {
-        Set<Integer> indexes = new HashSet<Integer>();
-
-        for (int columnIndex = 0; columnIndex < columnNames.length; columnIndex++) {
-            if (columnNames[columnIndex].equalsIgnoreCase(columnName)) {
-                indexes.add(columnIndex);
-            }
-        }
-
-        return indexes;
-    }
-
-
-    private Map<Integer, List<String>> getValuesForColumns(Set<Integer> columnIndexes) {
-
-        Map<Integer, List<String>> values = new HashMap<Integer, List<String>>();
-
-        for (int rowIndex : rowValues.keySet()) {
-            for (int columnIndex : columnIndexes) {
-                if (!values.containsKey(columnIndex)) {
-                    values.put(columnIndex, new ArrayList<String>());
-                }
-                values.get(columnIndex).add(rowValues.get(rowIndex)[columnIndex]);
-            }
-        }
-
-        return values;
-    }
+//    private Set<Integer> getColumnIndexForName(String columnName) {
+//        Set<Integer> indexes = new HashSet<Integer>();
+//
+//        for (int columnIndex = 0; columnIndex < columnNames.length; columnIndex++) {
+//            if (columnNames[columnIndex].equalsIgnoreCase(columnName)) {
+//                indexes.add(columnIndex);
+//            }
+//        }
+//
+//        return indexes;
+//    }
+//
+//
+//    private Map<Integer, List<String>> getValuesForColumns(Set<Integer> columnIndexes) {
+//
+//        Map<Integer, List<String>> values = new HashMap<Integer, List<String>>();
+//
+//        for (int rowIndex : rowValues.keySet()) {
+//            for (int columnIndex : columnIndexes) {
+//                if (!values.containsKey(columnIndex)) {
+//                    values.put(columnIndex, new ArrayList<String>());
+//                }
+//                values.get(columnIndex).add(rowValues.get(rowIndex)[columnIndex]);
+//            }
+//        }
+//
+//        return values;
+//    }
 
 
     public void printFiles(String accnum) {
@@ -472,6 +508,11 @@ public class MAGETabSDRFLoader {
 
                         if (columnNames[columnIndex].equalsIgnoreCase("Hybridization Name")) {
                             columnNames[columnIndex] = "Hybridization Assay Name";
+                            studyAssayHeaders += columnNames[columnIndex] + "\t";
+                        }
+
+                        else if (columnNames[columnIndex].equalsIgnoreCase("Assay Name")) {
+                            columnNames[columnIndex] = "Assay Name";
                             studyAssayHeaders += columnNames[columnIndex] + "\t";
                         }
 
@@ -519,7 +560,7 @@ public class MAGETabSDRFLoader {
 
             } else {
 
-                System.out.println("REALLY?? Study Sample position is: " + firstNodePosition);
+                System.out.println("SDRF Processing: REALLY?? Study Sample position is: " + firstNodePosition);
 
                 studySampleHeaders = studySampleHeaders + "Sample Name";
             }

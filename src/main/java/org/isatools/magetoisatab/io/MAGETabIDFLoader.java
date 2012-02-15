@@ -3,13 +3,14 @@ package org.isatools.magetoisatab.io;
 import org.apache.log4j.Logger;
 import uk.ac.ebi.utils.collections.Pair;
 
-import java.util.List;
-import java.util.*;
-import java.lang.*;
-import java.io.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.lang.Character;
+import java.lang.String;
+import java.lang.StringBuffer;
+import java.util.*;
 
 /**
  * Created by the ISA team
@@ -31,6 +32,8 @@ public class MAGETabIDFLoader {
     private static final Logger log = Logger.getLogger(MAGETabIDFLoader.class.getName());
 
     public static final Character TAB_DELIM = '\t';
+
+   public String[] sdrfFileNames;
 
     public List<String> investigationLines;
 
@@ -248,6 +251,27 @@ public class MAGETabIDFLoader {
 
 
                         else if (line.startsWith("SDRF File")) {
+
+
+                           sdrfFileNames = line.split("\\t");
+
+
+
+
+                            if (sdrfFileNames.length >2) {
+                                System.out.println("There is more than one SDRF file listed in this submission, now iterating throw them:");
+
+                                for (int counter=1;counter<sdrfFileNames.length;counter++){
+
+                                    System.out.println("SDRF number "+counter+ " is:"+sdrfFileNames[counter]);
+                                }
+
+                                System.out.println("not supported MAGE-TAB file, contact ArrayExpress for more information\n");
+                                break;
+
+                            }
+
+
                             line = line.replaceFirst("SDRF File", "Study Assay File Name");
                             if (assaylines == null) {
                                 assaylines = new ArrayList<String>();
@@ -604,7 +628,7 @@ public class MAGETabIDFLoader {
 
         for (String value : measurements) {
 
-            System.out.println(measurements.get(val));
+            System.out.println("FOUND IN IDF: " + measurements.get(val));
             MeasurementsAsString.append(value);
             if (val != measurements.size() - 1) {
                 MeasurementsAsString.append("\t");
@@ -617,7 +641,7 @@ public class MAGETabIDFLoader {
 
         for (String value : technologies) {
 
-            System.out.println(technologies.get(j));
+            System.out.println("FOUND IN IDF: " + technologies.get(j));
             TechnologiesAsString.append(value);
             if (j != technologies.size() - 1) {
                 TechnologiesAsString.append("\t");

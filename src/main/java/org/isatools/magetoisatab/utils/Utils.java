@@ -3,7 +3,6 @@ package org.isatools.magetoisatab.utils;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
@@ -55,12 +54,13 @@ public class Utils {
         boolean doGEOCleanup = geoAcc.startsWith("GSE") || geoAcc.startsWith("GDS");
 
         for (String[] line : spreadsheet) {
+            //This seems no longer needed as ArrayExpress fixed their parser and regenerated to files being served
 
-            if (doGEOCleanup) {
-                for (int columnIndex = 0; columnIndex < line.length; columnIndex++) {
-                    line[columnIndex] = line[columnIndex].replace(geoAcc, "");
-                }
-            }
+//            if (doGEOCleanup) {
+//                for (int columnIndex = 0; columnIndex < line.length; columnIndex++) {
+//                    line[columnIndex] = line[columnIndex].replace(geoAcc, "");
+//               }
+//            }
 
             if (line.length > 0) {
                 if (!line[0].trim().equals("")) {

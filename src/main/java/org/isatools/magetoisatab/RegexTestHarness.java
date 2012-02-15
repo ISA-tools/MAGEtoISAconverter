@@ -1,3 +1,5 @@
+package org.isatools.magetoisatab;
+
 import java.io.Console;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
