@@ -1,11 +1,31 @@
 package org.isatools.magetoisatab.io.model;
 
-/**
- * Created by IntelliJ IDEA.
- * User: prs
- * Date: 23/02/2012
- * Time: 14:42
- * To change this template use File | Settings | File Templates.
- */
+import java.util.ArrayList;
+import java.util.HashMap;
+
+
+
 public class Assay {
+
+    public HashMap<String, ArrayList<String[]>> assayLevelInformation;
+
+   // public String assaytype;
+
+    public Assay(HashMap<String, ArrayList<String[]>> assayLevelInformation) {
+        this.assayLevelInformation = assayLevelInformation;
+    }
+
+    public Assay() {
+        //To change body of created methods use File | Settings | File Templates.
+    }
+
+
+    public HashMap<String, ArrayList<String[]>> getAssayLevelInformation() {
+        return assayLevelInformation;
+    }
+
+    public void setAssayLevelInformation(HashMap<String, ArrayList<String[]>> assayLevelInformation) {
+        this.assayLevelInformation = assayLevelInformation;
+       // assayLevelInformation.put(assaytype,assayLevelInformation);
+    }
 }

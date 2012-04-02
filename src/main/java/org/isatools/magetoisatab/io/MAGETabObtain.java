@@ -46,7 +46,7 @@ public class MAGETabObtain {
 
         DownloadUtils.CONVERTED_DIRECTORY = saveDirectory;
 
-        String idfUrl, sdrfUrl,hybSdrfUrl, seqSdrfUrl;
+        String idfUrl;
 
         try {
 
@@ -56,30 +56,18 @@ public class MAGETabObtain {
             if (accnummatcher.find()) {
 
                 idfUrl = "http://www.ebi.ac.uk/arrayexpress/files/" + accessionNumber + "/" + accessionNumber + ".idf.txt";
-                sdrfUrl = "http://www.ebi.ac.uk/arrayexpress/files/" + accessionNumber + "/" + accessionNumber + ".sdrf.txt";
-                hybSdrfUrl= "http://www.ebi.ac.uk/arrayexpress/files/" + accessionNumber + "/" + accessionNumber + ".hyb.sdrf.txt";
-                seqSdrfUrl= "http://www.ebi.ac.uk/arrayexpress/files/" + accessionNumber + "/" + accessionNumber + ".seq.sdrf.txt";
+
 
                 DownloadUtils.createDirectory(DownloadUtils.TMP_DIRECTORY + File.separator + accessionNumber);
 
                 String idfDownloadLocation = DownloadUtils.TMP_DIRECTORY + File.separator + accessionNumber + File.separator + accessionNumber + ".idf.txt";
-                String sdrfDownloadLocation = DownloadUtils.TMP_DIRECTORY + File.separator + accessionNumber + File.separator + accessionNumber + ".sdrf.txt";
 
                 DownloadUtils.downloadFile(idfUrl, idfDownloadLocation);
-                DownloadUtils.downloadFile(sdrfUrl, sdrfDownloadLocation);
-
 
                 System.out.println("IDF found and downloaded: " + idfUrl);
+
                 MAGETabIDFLoader idfloader = new MAGETabIDFLoader();
                 idfloader.loadidfTab(idfDownloadLocation, accessionNumber);
-
-
-                System.out.println("SDRF found and downloaded: " + sdrfUrl);
-
-
-
-                MAGETabSDRFLoader sdrfloader = new MAGETabSDRFLoader();
-                sdrfloader.loadsdrfTab(sdrfDownloadLocation, accessionNumber);
 
                 return new File(DownloadUtils.CONVERTED_DIRECTORY + File.separator + accessionNumber);
 

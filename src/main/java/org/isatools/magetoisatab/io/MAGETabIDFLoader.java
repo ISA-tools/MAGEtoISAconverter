@@ -1,15 +1,14 @@
 package org.isatools.magetoisatab.io;
 
 import org.apache.log4j.Logger;
-import uk.ac.ebi.utils.collections.Pair;
+import org.isatools.magetoisatab.io.model.AssayType;
+import org.isatools.magetoisatab.io.model.Study;
+import org.isatools.magetoisatab.utils.PrintUtils;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.lang.Character;
-import java.lang.String;
-import java.lang.StringBuffer;
 import java.util.*;
 
 /**
@@ -27,13 +26,22 @@ import java.util.*;
  * The output is an ISA-TAB investigation file.
  */
 
+//TODO: in a number of cases MAGE-TAB encoded data needs relocation and reassignment (typically Chip Antibodies)
+//TODO: perform the collapsing the gapped characteristiscs
+
+
 public class MAGETabIDFLoader {
 
     private static final Logger log = Logger.getLogger(MAGETabIDFLoader.class.getName());
 
     public static final Character TAB_DELIM = '\t';
 
-   public String[] sdrfFileNames;
+    public String[] sdrfFileNames;
+
+    public String[] aeExpTypes;
+
+    public String[] cmtDesignTypes;
+
 
     public List<String> investigationLines;
 
@@ -56,28 +64,15 @@ public class MAGETabIDFLoader {
     public List<String> assaylines;
     public List<String> dateLines;
 
-//    public List<String> ontoLines = new ArrayList<String>() {
-//        {
-//            add("Term Source Name");
-//            add("Term Source File");
-//            add("Term Source Version");
-//            add("Term Source Description");
-//        }
-//    };
 
-
-    public Map<Integer,String> IsaOntoSection = new HashMap<Integer,String>() {
+    public Map<Integer, String> IsaOntoSection = new HashMap<Integer, String>() {
         {
-            put(0,"Term Source Name");
-            put(1,"Term Source File");
-            put(2,"Term Source Version");
-            put(3,"Term Source Description");
+            put(0, "Term Source Name");
+            put(1, "Term Source File");
+            put(2, "Term Source Version");
+            put(3, "Term Source Description");
         }
     };
-
-
-
-
 
 
     public List<String> factorLines = new ArrayList<String>() {
@@ -97,8 +92,8 @@ public class MAGETabIDFLoader {
         }
     };
 
-   //HashMap initialization to define canonical block structure
-    public   Map<Integer, String> IsaProtocolSection = new HashMap<Integer, String>(){
+    //HashMap initialization to define canonical block structure
+    public Map<Integer, String> IsaProtocolSection = new HashMap<Integer, String>() {
         {
             put(0, "Study Protocol Name");
             put(1, "Study Protocol Type");
@@ -119,7 +114,7 @@ public class MAGETabIDFLoader {
 
 
     //HashMap initialization to define canonical block structure
-    public Map<Integer, String> IsaContactSection = new HashMap<Integer, String>(){
+    public Map<Integer, String> IsaContactSection = new HashMap<Integer, String>() {
         {
             put(0, "Study Person Last Name");
             put(1, "Study Person First Name");
@@ -138,7 +133,6 @@ public class MAGETabIDFLoader {
     Map<InvestigationSections, List<String>> investigationSections;
 
 
-
     public MAGETabIDFLoader() {
         investigationSections = new HashMap<InvestigationSections, List<String>>();
     }
@@ -148,6 +142,7 @@ public class MAGETabIDFLoader {
 
         try {
 
+            String[] sdrfDownloadLocation = {"", "", ""};
             File file = new File(url);
 
             boolean success = (new File(DownloadUtils.CONVERTED_DIRECTORY + File.separator + accnum)).mkdirs();
@@ -173,16 +168,14 @@ public class MAGETabIDFLoader {
                             }
 
                             investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION).add(line);
-                        }
-                        else if (line.startsWith("Experiment Desc")) {
+                        } else if (line.startsWith("Experiment Desc")) {
 
                             line = line.replaceFirst("Experiment", "Study");
                             if (studyDesc == null) {
                                 studyDesc = new ArrayList<String>();
                             }
                             studyDesc.add(line);
-                        }
-                        else if (line.startsWith("Person")) {
+                        } else if (line.startsWith("Person")) {
 
                             line = line.replaceFirst("Person", "Study Person");
                             if (!investigationSections.containsKey(InvestigationSections.STUDY_CONTACT_SECTION)) {
@@ -190,8 +183,7 @@ public class MAGETabIDFLoader {
                             }
 
                             investigationSections.get(InvestigationSections.STUDY_CONTACT_SECTION).add(line);
-                        }
-                        else if (line.startsWith("PubMed")) {
+                        } else if (line.startsWith("PubMed")) {
 
                             line = line.replaceFirst("PubMed", "Study PubMed");
                             if (publicationLines == null) {
@@ -201,15 +193,14 @@ public class MAGETabIDFLoader {
                         }
 
                         //This is to handle ArrayExpress GEO to MAGE converter propagating PubMed ID to the Publication DOI field
-                        else if (line.startsWith("Publication DOI") && line.contains(".")){
+                        else if (line.startsWith("Publication DOI") && line.contains(".")) {
 
                             line = line.replaceFirst("Publication", "Study Publication DOI");
                             if (publicationLines == null) {
                                 publicationLines = new ArrayList<String>();
                             }
                             publicationLines.add(line);
-                        }
-                        else if ( (line.startsWith("Publication")) && !(line.contains("DOI"))){
+                        } else if ((line.startsWith("Publication")) && !(line.contains("DOI"))) {
 
                             line = line.replaceFirst("Publication", "Study Publication");
                             if (publicationLines == null) {
@@ -223,69 +214,72 @@ public class MAGETabIDFLoader {
                             line = line.toLowerCase();
                             line = line.replaceFirst("experimental factor name", "Study Factor Name");
                             factorLines.set(0, line);
-                        }
-                        else if (line.startsWith("Experimental Factor Type")) {
+                        } else if (line.startsWith("Experimental Factor Type")) {
                             line = line.toLowerCase();
                             line = line.replaceFirst("experimental factor type", "Study Factor Type");
                             factorLines.set(1, line);
-                        }
-                        else if (line.endsWith("Factor Term Accession")) {
+                        } else if (line.endsWith("Factor Term Accession")) {
                             line = line.replaceFirst("Experimental", "Study");
                             factorLines.set(2, line);
-                        }
-                        else if (line.endsWith("Factor Term Source REF")) {
+                        } else if (line.endsWith("Factor Term Source REF")) {
                             line = line.replaceFirst("Experimental", "Study");
                             factorLines.set(3, line);
-                        }
-                        else if ((line.contains("Experimental Design")) && (!(line.contains("Experimental Design Term")))) {
+                        } else if ((line.contains("Experimental Design")) && (!(line.contains("Experimental Design Term")))) {
+
+                            System.out.println("Experimental Design Tag found at: " + line);
+
                             line = line.replaceFirst("Experimental Design", "Study Design Type");
                             designLines.set(0, line);
                         }
 
                         //This bit is used to recover information for setting ISA MT and TT in case no Experimental Design is found
                         else if (line.startsWith("Comment[AEExperimentType")) {
+
                             System.out.println("Alternative Design Tag found at: " + line);
+
+                            cmtDesignTypes = line.split("\\t");
+
                             line = line.replace("Comment[AEExperimentType]", "Study Design Type");
                             designLines.set(0, line);
-                        }
+
+                        } else if (line.startsWith("SDRF File")) {
 
 
-                        else if (line.startsWith("SDRF File")) {
+                            sdrfFileNames = line.split("\\t");
 
+                            System.out.println("number of SDRF files: " + (sdrfFileNames.length - 1));
 
-                           sdrfFileNames = line.split("\\t");
+                            if (sdrfFileNames.length >= 1) {
 
+                                //There is more than one SDRF file listed in this submission, now iterating throw them:");
 
+                                for (int counter = 1; counter < sdrfFileNames.length; counter++) {
 
+                                    String sdrfUrl = "http://www.ebi.ac.uk/arrayexpress/files/" + accnum + "/" + sdrfFileNames[counter];
 
-                            if (sdrfFileNames.length >2) {
-                                System.out.println("There is more than one SDRF file listed in this submission, now iterating throw them:");
+                                    sdrfDownloadLocation[counter] = DownloadUtils.TMP_DIRECTORY + File.separator + accnum + File.separator + sdrfFileNames[counter];
 
-                                for (int counter=1;counter<sdrfFileNames.length;counter++){
+                                    DownloadUtils.downloadFile(sdrfUrl, sdrfDownloadLocation[counter]);
 
-                                    System.out.println("SDRF number "+counter+ " is:"+sdrfFileNames[counter]);
+                                    System.out.println("SDRF found and downloaded: " + sdrfUrl);
+
                                 }
-
-                                System.out.println("not supported MAGE-TAB file, contact ArrayExpress for more information\n");
-                                break;
 
                             }
 
-
                             line = line.replaceFirst("SDRF File", "Study Assay File Name");
+
                             if (assaylines == null) {
                                 assaylines = new ArrayList<String>();
                             }
                             assaylines.add(line);
-                        }
-                        else if (line.startsWith("Investigation")) {
+                        } else if (line.startsWith("Investigation")) {
                             line = line.replaceFirst("Investigation", "Study");
                             if (investigationLines == null) {
                                 investigationLines = new ArrayList<String>();
                             }
                             investigationLines.add(line);
-                        }
-                        else if (line.startsWith("Public R")) {
+                        } else if (line.startsWith("Public R")) {
                             line = line.replaceFirst("Public", "Study Public");
                             if (dateLines == null) {
                                 dateLines = new ArrayList<String>();
@@ -295,20 +289,29 @@ public class MAGETabIDFLoader {
 
 
                         // looks for information about Ontology and Terminologies used in MAGE-TAB document
+
                         else if (line.startsWith("Term Source Name")) {
-                            IsaOntoSection.put(0, line);
+
+                            String tempLine = "";
+                            tempLine = removeDuplicates(line);
+                            IsaOntoSection.put(0, tempLine);
 
                         } else if (line.startsWith("Term Source File")) {
 
-                            IsaOntoSection.put(2, line);
+                            String tempLine = "";
+                            tempLine = removeDuplicates(line);
+                            IsaOntoSection.put(2, tempLine);
 
                         } else if (line.startsWith("Term Source Version")) {
-
-                            IsaOntoSection.put(1, line);
+                            String tempLine = "";
+                            tempLine = removeDuplicates(line);
+                            IsaOntoSection.put(1, tempLine);
 
                         } else if (line.startsWith("Term Source Description")) {
 
-                            IsaOntoSection.put(3, line);
+                            String tempLine = "";
+                            tempLine = removeDuplicates(line);
+                            IsaOntoSection.put(3, tempLine);
 
                         }
 
@@ -322,14 +325,10 @@ public class MAGETabIDFLoader {
                         DownloadUtils.CONVERTED_DIRECTORY + File.separator + accnum + "/i_" + accnum + "_investigation.txt"));
 
                 //Outputting the ISA-TAB Ontology Section
-//                invPs.println("ONTOLOGY SOURCE REFERENCE");
-//                for (String ontoLine : ontoLines) {
-//                     invPs.println(ontoLine);
-//                }
+                invPs.println("ONTOLOGY SOURCE REFERENCE");
+
                 for (Map.Entry<Integer, String> e : IsaOntoSection.entrySet())
-                                    invPs.println(e.getValue());
-
-
+                    invPs.println(e.getValue());
 
                 //Outputing ISA-TAB Investigation Section which is always empty as MAGE-TAB does not support this.
                 invPs.println("INVESTIGATION\n" +
@@ -377,11 +376,12 @@ public class MAGETabIDFLoader {
                     invPs.println(aStudyDesc);
                 }
 
-                invPs.println("Study File Name" + "\t" + "s_" + accnum + "_studysample.txt");
+                invPs.println("Study File Name" + "\t" + "s_" + accnum + "_study_samples.txt");
 
                 invPs.println("STUDY DESIGN DESCRIPTORS");
 
                 for (int i = 0; i < designLines.size(); i++) {
+                    //System.out.println(designLines.get(i));
                     invPs.println(designLines.get(i));
                 }
 
@@ -403,7 +403,7 @@ public class MAGETabIDFLoader {
                         if (publicationLine.contains("Title")) {
                             IsaPublicationSection.put(3, publicationLine);
                         }
-                        if ((publicationLine.contains("Status")) && !(publicationLine.contains("Status Term"))){
+                        if ((publicationLine.contains("Status")) && !(publicationLine.contains("Status Term"))) {
                             IsaPublicationSection.put(4, publicationLine);
                         }
                         if (publicationLine.contains("Status Term Accession")) {
@@ -416,44 +416,118 @@ public class MAGETabIDFLoader {
                 }
 
                 //we now output the Publication Section of an ISA Study
-                    for (Map.Entry<Integer, String> e : IsaPublicationSection.entrySet())
-                        invPs.println(e.getValue());
+                for (Map.Entry<Integer, String> e : IsaPublicationSection.entrySet())
+                    invPs.println(e.getValue());
 
 
                 // Now Creating the Factor Section
                 invPs.println("STUDY FACTORS");
 
-                    for (String factorLine : factorLines) {
-                        invPs.println(factorLine);
-                    }
+                for (String factorLine : factorLines) {
+                    invPs.println(factorLine);
+                }
 
 
                 //Now creating the Assay Section:
                 invPs.println("STUDY ASSAYS");
 
                 // We are now trying to get the Measurement and Technology Type from MAGE annotation Experimental Design Type
-                StringBuffer alpha = getMeasurementAndTech(designLines.get(0)).fst;
-                StringBuffer beta = getMeasurementAndTech(designLines.get(0)).snd;
+
+                List<AssayType> assayTTMT = getMeasurementAndTech(designLines.get(0));
 
                 // If this fails, we are falling back on checking MAGE-TAB Comment[AEExperimentType] line
-                invPs.println(alpha);
+                String measurementTypes = "Study Assay Measurement Type";
+                String technologyTypes = "Study Assay Technology Type";
+
+                for (int i = 0; i < assayTTMT.size(); i++) {
+                    measurementTypes = measurementTypes + "\t" + assayTTMT.get(i).getMeasurement();
+                    technologyTypes = technologyTypes + "\t" + assayTTMT.get(i).getTechnology();
+                }
+
+                invPs.println(measurementTypes);
                 invPs.println("Study Assay Measurement Type Term Accession Number\n" +
-                              "Study Assay Measurement Type Term Source REF");
+                        "Study Assay Measurement Type Term Source REF");
 
-                invPs.println(beta);
+
+                invPs.println(technologyTypes);
                 invPs.println("Study Assay Technology Type Term Accession Number\n" +
-                              "Study Assay Technology Type Term Source REF\n" +
-                              "Study Assay Technology Platform");
+                        "Study Assay Technology Type Term Source REF\n" +
+                        "Study Assay Technology Platform");
 
 
-                invPs.println("Study Assay File Name" + "\t" + "a_" + accnum + "_assay.txt");
+                String assayfilenames = "Study Assay File Name";
 
+
+                //we now create as many assay spreadsheet as needed:
+
+                //case1: there is only SDRF and we rely on the information found under Comment[AEexperimentTypes]
+                //NOTE: caveat: AE is inconsistent and encode various measurement types under the same spreadsheet for sequencing applications
+                if ((assayTTMT.size() > 0) && ((sdrfFileNames.length - 1) == 1)) {
+
+                    for (int i = 0; i < assayTTMT.size(); i++) {       //we start at 1 as the first element of the array is the header "
+
+                        assayfilenames = assayfilenames + "\ta_" + accnum + "_" + assayTTMT.get(i).getShortcut() + "_assay.txt";
+
+                        System.out.println("CASE1: " + assayTTMT.get(i).getShortcut());
+                    }
+
+                    System.out.println("CASE1: " + assayfilenames);
+                }
+
+                //case2: there are more than 1 SDRF and we rely on the information found under Comment[AEexperimentTypes]
+                else if ((sdrfFileNames.length > 1) && (cmtDesignTypes.length - 1 > 1) && (sdrfFileNames.length == cmtDesignTypes.length)) {
+
+                    for (int i = 1; i < cmtDesignTypes.length; i++) { //we start at 1 as the first element of the array is the header "
+                        // System.out.println("design-before: "+cmtDesignTypes[i]);
+
+                        if (cmtDesignTypes[i].toLowerCase().contains("chip-seq")) {
+
+                            for (AssayType anAssayTTMT : assayTTMT) {
+                                if ((anAssayTTMT.getMeasurement().equalsIgnoreCase("protein-DNA binding site identification")) &&
+                                        (anAssayTTMT.getTechnology().equalsIgnoreCase("nucleotide sequencing")))
+
+                                {
+                                    cmtDesignTypes[i] = cmtDesignTypes[i].replaceAll("ChIP-seq", "ChIP-Seq");
+                                    anAssayTTMT.setFile(cmtDesignTypes[i]);
+                                }
+                            }
+                        }
+
+                        if (cmtDesignTypes[i].toLowerCase().contains("transcription profiling by array")) {
+                            for (AssayType anAssayTTMT : assayTTMT) {
+
+                                if ((anAssayTTMT.getMeasurement().equalsIgnoreCase("transcription profiling")) &&
+                                        (anAssayTTMT.getTechnology().equalsIgnoreCase("DNA microarray"))) {
+
+                                    // System.out.println("design-after-1st: "+cmtDesignTypes[i]);
+                                    cmtDesignTypes[i] = cmtDesignTypes[i].replaceAll("transcription profiling by array", "GeneChip");
+                                    anAssayTTMT.setFile(cmtDesignTypes[i]);
+                                }
+                            }
+                            // System.out.println("design-after-2nd: "+cmtDesignTypes[i]);
+                        }
+
+                    }
+
+
+                    for (int i = 0; i < assayTTMT.size(); i++) {
+                        assayfilenames = assayfilenames + "\ta_" + accnum + "_" + assayTTMT.get(i).getFile().replaceAll("\\s", "_") + "_assay.txt";
+                    }
+                    //need to reorder to match MT and TT declaration:
+
+
+                    System.out.println("CASE2: " + assayfilenames);
+                }
+
+                //now we can output that IDF row containing all
+
+                invPs.println(assayfilenames);
 
                 //Now creating the Protocol section
                 invPs.println("STUDY PROTOCOLS");
 
 
-               if (investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION).size() > 0) {
+                if (investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION).size() > 0) {
 
                     for (String protocolLine : investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION)) {
 
@@ -534,14 +608,16 @@ public class MAGETabIDFLoader {
 
                             IsaContactSection.put(8, contactLine);
                         }
-                        if (contactLine.contains("Roles Term Accession")) {
-
-                            IsaContactSection.put(9, contactLine);
-                        }
-                        if (contactLine.contains("Roles Term Source")) {
-
-                            IsaContactSection.put(10, contactLine);
-                        }
+//                        if (contactLine.contains("Roles Term Accession")) {
+//
+//                            IsaContactSection.put(9, contactLine);
+//                        }
+////
+//                       //
+//                      if (contactLine.contains("Roles Term Source")) {
+//
+//                            IsaContactSection.put(10, contactLine);
+//                        }
                     }
                 }
 
@@ -549,6 +625,132 @@ public class MAGETabIDFLoader {
                 for (Map.Entry<Integer, String> e : IsaContactSection.entrySet())
                     invPs.println(e.getValue());
 
+
+                //for each sdrf found in the IDF, perform processing
+                if ((sdrfFileNames.length - 1 == 1)) {      //the regular situation, one SDRF per MAGE-TAB file
+
+                    MAGETabSDRFLoader sdrfloader = new MAGETabSDRFLoader();
+
+                    Study study = sdrfloader.loadsdrfTab(sdrfDownloadLocation[1], accnum);
+
+                    PrintUtils pu = new PrintUtils();
+
+                    PrintStream ps = new PrintStream(new File(DownloadUtils.CONVERTED_DIRECTORY + File.separator + accnum + "/s_" + accnum + "_" + "study_samples.txt"));
+
+                    pu.printStudySamplesAndAssays(ps, study, accnum);
+
+                    //closing file handle
+                    ps.flush();
+                    ps.close();
+
+                } else {   //in case there are more than 1 SDRF file declared
+
+                    PrintUtils pu = new PrintUtils();
+
+                    PrintStream ps = new PrintStream(new File(DownloadUtils.CONVERTED_DIRECTORY + File.separator + accnum + "/s_" + accnum + "_" + "study_samples.txt"));
+
+                    List<LinkedHashMap<String, ArrayList<String>>> Studies = new ArrayList<LinkedHashMap<String, ArrayList<String>>>();
+
+                    //we start at 1 as the first element of the sdrfFilenames array corresponds to the ISA Study File Name tag
+                    for (int counter = 1; counter < sdrfFileNames.length; counter++) {
+
+                        System.out.println("SDRF number " + counter + " is:" + sdrfDownloadLocation[counter]);
+
+                        MAGETabSDRFLoader sdrfloader = new MAGETabSDRFLoader();
+
+                        Study study = sdrfloader.loadsdrfTab(sdrfDownloadLocation[counter], accnum);
+
+                        LinkedHashMap<String, ArrayList<String>> table = new LinkedHashMap<String, ArrayList<String>>();
+
+                        //for every
+                        for (int i = 0; i < study.getStudySampleLevelInformation().get(0).length; i++) {
+
+                            String key = study.getStudySampleLevelInformation().get(0)[i];
+
+                            ArrayList<String> values = new ArrayList<String>();
+
+                            for (int k = 1; k < study.getStudySampleLevelInformation().size(); k++) {
+
+                                String value = study.getStudySampleLevelInformation().get(k)[i].toString();
+
+                                if (value != null) {
+                                    values.add(value);
+                                }
+
+                            }
+
+                            table.put(key, values);
+
+                        }
+
+                        Studies.add(table);
+
+                        //TODO: for each study object, create a new Pair of ArrayList of String[], one holding the various study-sample tables
+                        //which will require processing for fusing them
+                        //accumulate the assays if needed.
+                        //TODO: when more than one SDRF is found, additional Processing maybe needed to support creation of an investigation
+
+                        pu.printStudySamplesAndAssays(ps, study, accnum);
+                    }
+
+
+                    mergeTables(Studies);
+
+                    //this set's keys are the final header of the merged study sample file
+                    Set<String> tableKeyset = mergeTables(Studies).keySet();
+                    String finalStudyTableHeader = "";
+                    Iterator iterator = tableKeyset.iterator();
+
+                    //we now splice the header together by concatenating the key
+                    while (iterator.hasNext()) {
+                        finalStudyTableHeader = finalStudyTableHeader + iterator.next().toString() + "\t";
+                    }
+                    //we print the header
+                    ps.println(finalStudyTableHeader);
+
+                    //we now need to get the total number of records. This corresponds to the number of elements in the arrays associated to the key "Sample Name"
+
+                    int numberOfSampleRecords;
+
+                    ArrayList<String> guestList = new ArrayList<String>();
+                    guestList = (ArrayList<String>) mergeTables(Studies).get("Sample Name");
+
+                    numberOfSampleRecords = guestList.size();
+
+                    Set<String> finalStudyTable = new HashSet<String>();
+
+                    for (int i = 0; i < numberOfSampleRecords; i++) {
+
+                        String studyRecord = "";
+
+                        for (Object key : mergeTables(Studies).keySet()) {
+
+                            //obtain the list associated to that given key
+                            ArrayList<String> correspondingList = new ArrayList<String>();
+                            correspondingList = (ArrayList<String>) mergeTables(Studies).get(key);
+
+                            // now obtain the ith element of that associated list
+                            if (i < correspondingList.size()) {
+
+                                studyRecord += correspondingList.get(i) + "\t";
+                            } else {
+                                studyRecord += "" + "\t";
+                            }
+                        }
+
+                        finalStudyTable.add(studyRecord);
+                    }
+
+                    //Here we print the new records to the final study sample file
+                    Iterator itr = finalStudyTable.iterator();
+                    while (itr.hasNext()) {
+                        ps.println(itr.next());
+                    }
+
+                    //closing file handle
+                    ps.flush();
+                    ps.close();
+                }
 
             } else {
                 System.out.println("ERROR: File not found");
@@ -562,99 +764,111 @@ public class MAGETabIDFLoader {
 
     }
 
+    private LinkedHashMap mergeTables(List<LinkedHashMap<String, ArrayList<String>>> studies) {
+
+        int i = 0;
+
+        LinkedHashSet<String> allKeys = new LinkedHashSet<String>();
+
+        LinkedHashMap<String, ArrayList<String>> resultMap = new LinkedHashMap<String, ArrayList<String>>();
+
+        allKeys.addAll(studies.get(i).keySet());
+        allKeys.addAll(studies.get(i + 1).keySet());
+
+        for (String k : allKeys) {
+
+            ArrayList<String> i1 = studies.get(i).containsKey(k) ? studies.get(i).get(k) : null;
+            ArrayList<String> i2 = studies.get(i + 1).containsKey(k) ? studies.get(i + 1).get(k) : null;
+
+            ArrayList<String> newList = new ArrayList<String>(i1);
+
+            if (i2 != null) {
+                newList.addAll(i2);
+            }
+
+            resultMap.put(k, newList);
+
+        }
+
+        return resultMap;
+    }
+
+
+    /**
+     * A method to remove duplicate entries in Ontology Section
+     */
+    private String removeDuplicates(String ontoline) {
+
+        String newLine = "";
+
+        String[] stringArray = ontoline.split("\\t");
+
+        ArrayList<String> stringArrayList = new ArrayList<String>(Arrays.asList(stringArray));
+
+        Set<String> set = new LinkedHashSet<String>(stringArrayList);
+
+        Iterator iter = set.iterator();
+
+        while (iter.hasNext()) {
+
+            newLine = newLine + iter.next().toString() + "\t";
+
+        }
+        return newLine;
+
+    }
+
 
     /**
      * A method that uses MAGE-TAB Experiment Design information to deduce ISA Measurement and Technology Types.
      *
      * @param line
      * @return A Pair of Strings containing the Measurement and Technology Types to be output
-     * TODO: rely on an xml configuration file to instead of hard coded values -> easier to maintain in case of changes in ArrayExpress terminology
+     *         TODO: rely on an xml configuration file to instead of hard coded values -> easier to maintain in case of changes in ArrayExpress terminology
      */
+    private List<AssayType> getMeasurementAndTech(String line) {
 
-    private Pair<StringBuffer, StringBuffer> getMeasurementAndTech(String line) {
+        // Line can contain multiple technologies. We must output them all as AssayTypes.
 
-        List<String> measurements = new ArrayList<String>();
-        List<String> technologies = new ArrayList<String>();
-
-        StringBuffer MeasurementsAsString = new StringBuffer();
-        StringBuffer TechnologiesAsString = new StringBuffer();
-
-        MeasurementsAsString.append("Study Assay Measurement Type\t");
-        TechnologiesAsString.append("Study Assay Technology Type\t");
-
-        Pair<StringBuffer, StringBuffer> resultMtTt = new Pair<StringBuffer, StringBuffer>(MeasurementsAsString, TechnologiesAsString);
-
+        List<AssayType> assayTypes = new ArrayList<AssayType>();
 
         if (line.matches("(?i).*ChIP-Chip.*")) {
-
-            measurements.add("protein-DNA binding site identification");
-            technologies.add("DNA microarray");
-
-        } else if (line.matches(".*transcription profiling by array.*")) {
-
-            measurements.add("transcription profiling");
-            technologies.add("DNA microarray");
-
-        } else if (line.matches("(?i).*methylation profiling by array.*")) {
-
-            measurements.add("DNA methylation profiling");
-            technologies.add("DNA microarray");
-
-        } else if (line.matches("(?i).*comparative genomic hybridization by array.*")) {
-
-            measurements.add("comparative genomic hybridization");
-            technologies.add("DNA microarray");
-
-        } else if (line.matches(".*genotyping by array.*")) {
-
-            measurements.add("SNP analysis");
-            technologies.add("DNA microarray");
-
-        } else if (line.matches("(?i).*transcription profiling by high throughput sequencing.*")) {
-
-            measurements.add("transcription profiling");
-            technologies.add("nucleotide sequencing");
-
-        } else if (line.matches("(?i).*ChIP-Seq.*")) {
-
-            measurements.add("protein-DNA binding site identification");
-            technologies.add("nucleotide sequencing");
-
-        } else {}
-
-
-
-        int val = 0;
-
-        for (String value : measurements) {
-
-            System.out.println("FOUND IN IDF: " + measurements.get(val));
-            MeasurementsAsString.append(value);
-            if (val != measurements.size() - 1) {
-                MeasurementsAsString.append("\t");
-            }
-            val++;
+            assayTypes.add(new AssayType("protein-DNA binding site identification", "DNA microarray", "ChIP-Chip"));
         }
 
-
-        int j = 0;
-
-        for (String value : technologies) {
-
-            System.out.println("FOUND IN IDF: " + technologies.get(j));
-            TechnologiesAsString.append(value);
-            if (j != technologies.size() - 1) {
-                TechnologiesAsString.append("\t");
-            }
-            j++;
+        if ( (line.matches("(?i).*RNA-seq.*"))  || (line.matches("(?i).*RNA-Seq.*")) || (line.matches("(?i).*transcription profiling by high throughput sequencing.*"))){
+            assayTypes.add(new AssayType("transcription profiling", "nucleotide sequencing", "RNA-Seq"));
         }
 
+        if (line.matches(".*transcription profiling by array.*")) {
+            assayTypes.add(new AssayType("transcription profiling", "DNA microarray", "GeneChip"));
+        }
+        if (line.matches("(?i).*methylation profiling by array.*")) {
+            assayTypes.add(new AssayType("DNA methylation profiling", "DNA microarray", "Me-Chip"));
 
-        return resultMtTt;
+        }
+        if (line.matches("(?i).*comparative genomic hybridization by array.*")) {
+            assayTypes.add(new AssayType("comparative genomic hybridization", "DNA microarray", "CGH-Chip"));
+        }
+        if (line.matches(".*genotyping by array.*")) {
+            assayTypes.add(new AssayType("SNP analysis", "DNA microarray", "SNPChip"));
+        }
+//        if (line.matches("(?i).*transcription profiling by high throughput sequencing.*")) {
+//            assayTypes.add(new AssayType("transcription profiling", "nucleotide sequencing", "RNA-Seq"));
+//        }
+        if ( (line.matches("(?i).*ChIP-Seq.*")) || (line.matches("(?i).*chip-seq.*"))  ) {
+            assayTypes.add(new AssayType("protein-DNA binding site identification", "nucleotide sequencing", "ChIP-Seq"));
+        }
+//        if (line.matches("(?i).*chip-seq.*")) {
+//            assayTypes.add(new AssayType("protein-DNA binding site identification", "nucleotide sequencing", "ChIP-Seq"));
+//        }
+//        if (line.matches("(?i).*RNA-Seq.*")) {
+//            assayTypes.add(new AssayType("transcription profiling", "nucleotide sequencing", "RNA-Seq"));
+//        }
+
+        return assayTypes;
 
     }
 
 
 }
-
-

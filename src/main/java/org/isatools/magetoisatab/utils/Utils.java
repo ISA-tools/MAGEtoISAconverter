@@ -54,13 +54,15 @@ public class Utils {
         boolean doGEOCleanup = geoAcc.startsWith("GSE") || geoAcc.startsWith("GDS");
 
         for (String[] line : spreadsheet) {
-            //This seems no longer needed as ArrayExpress fixed their parser and regenerated to files being served
 
-//            if (doGEOCleanup) {
-//                for (int columnIndex = 0; columnIndex < line.length; columnIndex++) {
-//                    line[columnIndex] = line[columnIndex].replace(geoAcc, "");
-//               }
-//            }
+            if (doGEOCleanup) {
+                for (int columnIndex = 0; columnIndex < line.length; columnIndex++) {
+
+                    if (!line[columnIndex].contains("P-"))  {      //this test prevents the replacement to affect Protocols accession from AE
+                    line[columnIndex] = line[columnIndex].replace(geoAcc, "");
+                    }
+               }
+            }
 
             if (line.length > 0) {
                 if (!line[0].trim().equals("")) {
