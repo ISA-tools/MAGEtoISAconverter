@@ -12,7 +12,7 @@ import java.util.*;
  *         Date: 09/07/2012
  *         Time: 14:43
  */
-public class RemoveDuplicateColumnUtil implements FileUtils {
+public class RemoveDuplicateColumnUtil implements CleanupUtils {
 
     private Map<String, String[]> mergedColumnValues;
 

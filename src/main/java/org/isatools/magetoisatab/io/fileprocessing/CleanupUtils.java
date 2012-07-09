@@ -8,7 +8,7 @@ package org.isatools.magetoisatab.io.fileprocessing;
  *         Date: 09/07/2012
  *         Time: 14:43
  */
-public interface FileUtils {
+public interface CleanupUtils {
 
 
 }
