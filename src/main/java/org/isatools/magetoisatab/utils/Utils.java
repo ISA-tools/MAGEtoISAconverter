@@ -3,7 +3,6 @@ package org.isatools.magetoisatab.utils;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
@@ -58,8 +57,11 @@ public class Utils {
 
             if (doGEOCleanup) {
                 for (int columnIndex = 0; columnIndex < line.length; columnIndex++) {
+
+                    if (!line[columnIndex].contains("P-"))  {      //this test prevents the replacement to affect Protocols accession from AE
                     line[columnIndex] = line[columnIndex].replace(geoAcc, "");
-                }
+                    }
+               }
             }
 
             if (line.length > 0) {

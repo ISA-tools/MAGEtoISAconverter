@@ -2,13 +2,14 @@ package org.isatools.magetoisatab.utils;
 
 import org.isatools.io.FileType;
 import org.isatools.io.Loader;
-import org.isatools.manipulator.SpreadsheetManipulation;
 
 import java.io.IOException;
 import java.util.*;
 
 
-public class ProtocolREFUtil {
+public class CollapseColumnUtil {
+
+    private String lookingFor;
 
     private Map<Integer, Integer> selectCandidates(String[] columnNames) {
 
@@ -19,7 +20,7 @@ public class ProtocolREFUtil {
 
         for (int columnIndex = 0; columnIndex < columnNames.length; columnIndex++) {
 
-            if (columnNames[columnIndex].equals("Protocol REF")) {
+            if (columnNames[columnIndex].contains(lookingFor)) {
 
                 if (startIndex == -1) {
                     startIndex = columnIndex;
@@ -45,7 +46,9 @@ public class ProtocolREFUtil {
         return candidates;
     }
 
-    public List<String[]> processSpreadsheet(List<String[]> spreadsheet) {
+    public List<String[]> processSpreadsheet(List<String[]> spreadsheet, String lookingFor) {
+        this.lookingFor = lookingFor;
+
         String[] columnNames = spreadsheet.get(0);
 
         Map<Integer, Integer> candidates = selectCandidates(columnNames);
@@ -192,13 +195,13 @@ public class ProtocolREFUtil {
     public static void main(String[] args) {
 
 
-        List<String[]> testList = null;
+        List<String[]> testList;
         try {
             Loader loader = new Loader();
             testList = loader.loadSheet("DownloadedMAGEFiles/E-GEOD-11172/E-GEOD-11172.sdrf.txt", FileType.TAB);
-            ProtocolREFUtil util = new ProtocolREFUtil();
+            CollapseColumnUtil util = new CollapseColumnUtil();
 
-            util.processSpreadsheet(testList);
+            util.processSpreadsheet(testList, "Protocol REF");
         } catch (IOException e) {
             e.printStackTrace();
         }

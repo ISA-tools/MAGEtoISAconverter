@@ -30,8 +30,11 @@ public class MAGETabObtain {
 
         try {
             doConversion(inputstr.nextLine(), "Data");
+
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+
+            System.out.println("ERROR MSG : " + e.getMessage());
+                    e.printStackTrace();
         }
     }
 
@@ -43,7 +46,7 @@ public class MAGETabObtain {
 
         DownloadUtils.CONVERTED_DIRECTORY = saveDirectory;
 
-        String idfUrl, sdrfUrl;
+        String idfUrl;
 
         try {
 
@@ -53,29 +56,21 @@ public class MAGETabObtain {
             if (accnummatcher.find()) {
 
                 idfUrl = "http://www.ebi.ac.uk/arrayexpress/files/" + accessionNumber + "/" + accessionNumber + ".idf.txt";
-                sdrfUrl = "http://www.ebi.ac.uk/arrayexpress/files/" + accessionNumber + "/" + accessionNumber + ".sdrf.txt";
 
 
                 DownloadUtils.createDirectory(DownloadUtils.TMP_DIRECTORY + File.separator + accessionNumber);
 
                 String idfDownloadLocation = DownloadUtils.TMP_DIRECTORY + File.separator + accessionNumber + File.separator + accessionNumber + ".idf.txt";
-                String sdrfDownloadLocation = DownloadUtils.TMP_DIRECTORY + File.separator + accessionNumber + File.separator + accessionNumber + ".sdrf.txt";
 
                 DownloadUtils.downloadFile(idfUrl, idfDownloadLocation);
-                DownloadUtils.downloadFile(sdrfUrl, sdrfDownloadLocation);
 
+                System.out.println("IDF found and downloaded: " + idfUrl);
 
-                System.out.println(idfUrl);
                 MAGETabIDFLoader idfloader = new MAGETabIDFLoader();
                 idfloader.loadidfTab(idfDownloadLocation, accessionNumber);
 
-
-                System.out.println(sdrfUrl);
-
-                MAGETabSDRFLoader sdrfloader = new MAGETabSDRFLoader();
-                sdrfloader.loadsdrfTab(sdrfDownloadLocation, accessionNumber);
-
                 return new File(DownloadUtils.CONVERTED_DIRECTORY + File.separator + accessionNumber);
+
             } else {
 
                 throw new Exception("Sorry, this does not seem to be a valid ArrayExpress accession number !");
@@ -83,6 +78,7 @@ public class MAGETabObtain {
             }
 
         } catch (IOException ioe) {
+
             System.out.println("Caught an IO exception :-o");
             ioe.printStackTrace();
         }

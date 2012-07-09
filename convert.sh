@@ -8,5 +8,4 @@ MAGETAB_ACCESSION="E-BUGS-65"
 CONVERSION_DIR="/Users/eamonnmaguire/Downloads/Conversion/"
 
 java -Xms256m -Xmx1024m -XX:PermSize=64m -XX:MaxPermSize=128m\
-     -cp "$CP" org.isatools.magetoisatab.io.MAGETabObtain $MAGETAB_ACCESSION $CONVERSION_DIR
-
+     -cp "$CP" org.isatools.magetoisatab.io.MAGETabObtain

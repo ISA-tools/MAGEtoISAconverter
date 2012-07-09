@@ -130,6 +130,12 @@
             <version>1.2</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.isatools</groupId>
+            <artifactId>import_layer</artifactId>
+            <version>1.5</version>
+        </dependency>
+
     </dependencies>
 
     <distributionManagement>
