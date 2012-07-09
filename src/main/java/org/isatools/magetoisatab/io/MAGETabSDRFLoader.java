@@ -9,6 +9,7 @@ import org.isatools.magetoisatab.io.model.Assay;
 import org.isatools.magetoisatab.io.model.Study;
 import org.isatools.magetoisatab.utils.CollapseColumnUtil;
 import org.isatools.magetoisatab.utils.Column;
+import org.isatools.magetoisatab.utils.ConversionProperties;
 import org.isatools.magetoisatab.utils.Utils;
 import org.isatools.manipulator.SpreadsheetManipulation;
 
@@ -21,7 +22,7 @@ import java.util.*;
 
 public class MAGETabSDRFLoader {
 
-   // private static final Logger log = Logger.getLogger(MAGETabSDRFLoader);
+    // private static final Logger log = Logger.getLogger(MAGETabSDRFLoader);
 
     public static final Character TAB_DELIM = '\t';
 
@@ -45,7 +46,6 @@ public class MAGETabSDRFLoader {
     private boolean isPresentHyb = false;
     private boolean isPresentAssay = false;
     private boolean isPresentNorm = false;
-    private boolean isPresentRawData = false;
     private boolean isPresentDT = false;
     private boolean isPresentDerivedData = false;
 
@@ -58,7 +58,7 @@ public class MAGETabSDRFLoader {
     //public ArrayList<int[]> ;
     List columns2drop = new ArrayList();
     List columns2dropFromStudy = new ArrayList();
-    private HashMap<String,String[]> theOne;
+    private HashMap<String, String[]> theOne;
 
 
     public MAGETabSDRFLoader() {
@@ -70,8 +70,8 @@ public class MAGETabSDRFLoader {
 
     public Study loadsdrfTab(String url, String accnum) throws IOException {
 
-       ArrayList<String[]>  studySamplesFromThisSDRF =  new ArrayList<String[]>();
-       List<Assay> assaysFromThisSDRF =new ArrayList<Assay>() ;
+        List<String[]> studySamplesFromThisSDRF = new ArrayList<String[]>();
+        List<Assay> assaysFromThisSDRF = new ArrayList<Assay>();
 
         Study study = new Study(studySamplesFromThisSDRF, assaysFromThisSDRF);
 
@@ -100,8 +100,8 @@ public class MAGETabSDRFLoader {
 
                 List<String[]> factorSheetData = new ArrayList<String[]>();
                 List<Integer> factorPositions2Keep = new ArrayList<Integer>();
-                factorPositions2Keep.add(0);               
-                
+                factorPositions2Keep.add(0);
+
                 // now checking which fields need dropping and adding them to the ArrayList
                 for (int columnIndex = 0; columnIndex < columnNames.length; columnIndex++) {
 
@@ -109,7 +109,9 @@ public class MAGETabSDRFLoader {
 
                         // we don't need TERM SOURCE REF if they are found right after Protocol REF
                         if (!((columnNames[columnIndex].equalsIgnoreCase("term source ref"))
-                                && (columnNames[columnIndex - 1].equalsIgnoreCase("protocol ref")))) {  positions2keep.add(columnIndex);     }
+                                && (columnNames[columnIndex - 1].equalsIgnoreCase("protocol ref")))) {
+                            positions2keep.add(columnIndex);
+                        }
                     }
 
                     if (columnNames[columnIndex].equalsIgnoreCase("technology type")) {
@@ -126,7 +128,7 @@ public class MAGETabSDRFLoader {
                         columnNames[columnIndex] = columnNames[columnIndex].toLowerCase();
                         columnNames[columnIndex] = columnNames[columnIndex].replaceAll("factor value ", "Factor Value");
 
-                        System.out.println("There is a factor value at position: "+columnIndex);
+                        System.out.println("There is a factor value at position: " + columnIndex);
                         factorPositions2Keep.add(columnIndex);
                     }
                 }
@@ -144,12 +146,9 @@ public class MAGETabSDRFLoader {
                 //where does Assay Name field appear?
                 int assayNameIndex = Utils.getIndexForValue("Assay Name", columnOrders);
 
-
                 //where does Data Transformation Name field appear?
                 int dtNameIndex = -1;
                 dtNameIndex = Utils.getIndexForValue("Data Transformation Name", columnOrders);
-                //System.out.println("DT: " + dtNameIndex);
-
 
                 //where does Derived Array Data File field appear?
                 int derivedArrayDataFileIndex = -1;
@@ -168,8 +167,7 @@ public class MAGETabSDRFLoader {
                     if (derivedArrayDataFileIndex > 0 && scanNameIndex > 0) {
                         Column scanName = columnOrders.remove(Utils.getIndexForValue("Scan Name", columnOrders));
                         columnOrders.add(derivedArrayDataFileIndex - 1, scanName);
-                    }
-                    else if (derivedArrayDataFileIndex == 0 && scanNameIndex > 0) {
+                    } else if (derivedArrayDataFileIndex == 0 && scanNameIndex > 0) {
                         Column scanName = columnOrders.remove(Utils.getIndexForValue("Scan Name", columnOrders));
                         columnOrders.add(assayNameIndex + 1, scanName);
                     }
@@ -197,13 +195,10 @@ public class MAGETabSDRFLoader {
                 //we initialize
                 CollapseColumnUtil util = new CollapseColumnUtil();
 
-                //CharacteristicsUtil charUtil = new CharacteristicsUtil();
-
                 //we perform the transformation using the processSpreadsheet method
                 sheetDataSubset = util.processSpreadsheet(sheetDataSubset, PROTOCOL_REF);
-                sheetDataSubset = util.processSpreadsheet(sheetDataSubset, CHARACTERISTICS);
+//                sheetDataSubset = util.processSpreadsheet(sheetDataSubset, CHARACTERISTICS);
 
-                // sheetDataSubset = charUtil.processSpreadsheet(sheetDataSubset);
                 // you can read each line separately!
 
                 String[] sdrfHeaderRow = sheetDataSubset.get(0);
@@ -214,56 +209,50 @@ public class MAGETabSDRFLoader {
 
                 System.out.println("POSITIONS ARE: " + sdrfKeyPositions.fst + " AND " + sdrfKeyPositions.snd);
 
-                Pair<ArrayList<String[]>,ArrayList<String[]>> studySplitTables = splitSdrfTable(sdrfKeyPositions, sheetDataSubset,factorSheetData);
+                Pair<List<String[]>, List<String[]>> studySplitTables = splitSdrfTable(sdrfKeyPositions, sheetDataSubset, factorSheetData);
 
                 study.setStudySampleLevelInformation(studySplitTables.fst);
-                
+
                 study.setAssays(inspectSdrfAssay(studySplitTables.snd));
 
                 assaysFromThisSDRF = inspectSdrfAssay(studySplitTables.snd);
-             
+
                 // we are now iterating through the different assays and printing them
-                for (int i =0 ; i<assaysFromThisSDRF.size();i++ ) {
+                for (Assay anAssaysFromThisSDRF : assaysFromThisSDRF) {
 
-                          for (String key : assaysFromThisSDRF.get(i).getAssayLevelInformation().keySet()) {
+                    for (String key : anAssaysFromThisSDRF.getAssayLevelInformation().keySet()) {
 
-                              PrintStream assayPs = new PrintStream(new File(DownloadUtils.CONVERTED_DIRECTORY + File.separator + accnum + "/a_" + accnum + "_" + key + "_assay.txt"));
+                        PrintStream assayPs = new PrintStream(new File(DownloadUtils.CONVERTED_DIRECTORY + File.separator + accnum + "/a_" + accnum + "_" + key + "_assay.txt"));
 
-                              for (String[] records :assaysFromThisSDRF.get(i).getAssayLevelInformation().get(key) )    {
+                        for (String[] records : anAssaysFromThisSDRF.getAssayLevelInformation().get(key)) {
 
-                                String newAssayRecord ="";
+                            String newAssayRecord = "";
 
-                                  for   (String s : records) {
-                                     newAssayRecord+=s+"\t";
-                                  }
-                                  assayPs.println(newAssayRecord);
+                            for (String s : records) {
+                                newAssayRecord += s + "\t";
+                            }
+                            assayPs.println(newAssayRecord);
 
-                              }
-                          }
+                        }
+                    }
                 }
+            } else {
+
+                System.out.println("SDRF Processing: ERROR: file not found!");
             }
-                else{
-
-                    System.out.println("SDRF Processing: ERROR: file not found!");
-            }
-
-        } catch (  FileNotFoundException e )   {
-
+        } catch (FileNotFoundException e) {
             e.printStackTrace();
-
-        } catch ( IOException ioe  )  {
-
+        } catch (IOException ioe) {
             ioe.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-
         return study;
     }
 
-
-
     private void addStudySample(String[] sampleBlock) {
 
-        StringBuffer blockAsString = new StringBuffer();
+        StringBuilder blockAsString = new StringBuilder();
 
         for (String value : sampleBlock) {
             blockAsString.append(value);
@@ -276,38 +265,6 @@ public class MAGETabSDRFLoader {
         }
     }
 
-//    private Set<Integer> getColumnIndexForName(String columnName) {
-//        Set<Integer> indexes = new HashSet<Integer>();
-//
-//        for (int columnIndex = 0; columnIndex < columnNames.length; columnIndex++) {
-//            if (columnNames[columnIndex].equalsIgnoreCase(columnName)) {
-//                indexes.add(columnIndex);
-//            }
-//        }
-//
-//        return indexes;
-//    }
-//
-//
-//    private Map<Integer, List<String>> getValuesForColumns(Set<Integer> columnIndexes) {
-//
-//        Map<Integer, List<String>> values = new HashMap<Integer, List<String>>();
-//
-//        for (int rowIndex : rowValues.keySet()) {
-//            for (int columnIndex : columnIndexes) {
-//                if (!values.containsKey(columnIndex)) {
-//                    values.put(columnIndex, new ArrayList<String>());
-//                }
-//                values.get(columnIndex).add(rowValues.get(rowIndex)[columnIndex]);
-//            }
-//        }
-//
-//        return values;
-//    }
-
-
-
-
     /**
      * A method to create a new record.
      *
@@ -316,48 +273,13 @@ public class MAGETabSDRFLoader {
      */
     private String getArrayAsString(String[] array) {
 
-        StringBuffer blockAsString = new StringBuffer();
+        StringBuilder blockAsString = new StringBuilder();
         int val = 0;
 
         for (String anArray : array) {
 
             // here we check which fields to drop
             if ((columns2drop.contains(val))) {
-                val++;
-            }
-            //otherwise we print
-            else if (anArray != null) {
-
-                //provided the value is not equal to null, we append to the record
-                blockAsString.append(anArray);
-
-                //join record with a tab
-                if ((val != array.length - 1)) {
-                    blockAsString.append("\t");
-                    val++;
-                }
-            }
-        }
-
-        return blockAsString.toString();
-    }
-
-
-    /**
-     * A method to create a new record.
-     *
-     * @param array columns2drop
-     * @return a record as a string
-     */
-    private String getArrayAsString4Study(String[] array) {
-
-        StringBuffer blockAsString = new StringBuffer();
-        int val = 0;
-
-        for (String anArray : array) {
-
-            // here we check which fields to drop from output Study_Sample file
-            if (columns2dropFromStudy.contains(val)) {
                 val++;
             }
             //otherwise we print
@@ -424,28 +346,11 @@ public class MAGETabSDRFLoader {
             isPresentDT = true;
         }
         if (getArrayAsString(columnNames).contains("Raw Data File")) {
-            isPresentRawData = true;
+            boolean presentRawData = true;
         }
         if ((getArrayAsString(columnNames).contains("Derived Array Data File") || (getArrayAsString(columnNames).contains("Derived Array Data Matrix File")))) {
             isPresentDerivedData = true;
         }
-
-//                        if (getArrayAsString(columnNames).contains("Factor Name")) {
-//
-//                            for (int i = 0; i < headerRow.length; i++) {
-//
-//                                System.out.println("SDRF Processing: " + headerRow[i]);
-//                                if (headerRow[i].equals("Factor Name")) {
-//
-//                                    firstFactorPosition = i;
-//
-//                                    break;   // we have found the First Factor field, we can leave, from this point onwards
-//                                }
-//                            }
-//
-//
-//                        }
-
 
         if (!getArrayAsString(columnNames).contains("Sample Name")) {
 
@@ -517,10 +422,10 @@ public class MAGETabSDRFLoader {
      * input is a SRDF file name
      * output is a study object containing a StudySample hashmap and an ArrayList of Assays
      */
-    public Pair<ArrayList<String[]>, ArrayList<String[]>> splitSdrfTable(Pair<Integer, Integer> indices, List<String[]> sheetDataSubset ,List<String[]> factorSheetData) {
+    public Pair<List<String[]>, List<String[]>> splitSdrfTable(Pair<Integer, Integer> indices, List<String[]> sheetDataSubset, List<String[]> factorSheetData) {
 
-        ArrayList<String[]> sdrfStudySampleTable = new ArrayList<String[]>();
-        ArrayList<String[]> sdrfAssayTable = new ArrayList<String[]>();
+        List<String[]> sdrfStudySampleTable = new ArrayList<String[]>();
+        List<String[]> sdrfAssayTable = new ArrayList<String[]>();
 
         //HashMap<String, ArrayList<String[]>> assaysFromThisSDRF = new HashMap<String, ArrayList<String[]>>();
         //Pair<ArrayList<String[]>, ArrayList<String[]>> srdfSplitTables = new Pair<ArrayList<String[]>, ArrayList<String[]>>(sdrfStudySampleTable, sdrfAssayTable);
@@ -529,8 +434,8 @@ public class MAGETabSDRFLoader {
         String studyAssayHeaders = "";
 
         Integer firstIndexNodePosition = indices.fst;
-             System.out.println("FIRST NODE POSITION : " + firstIndexNodePosition) ;
-             System.out.println("FIRST NODE  : " + columnNames[firstIndexNodePosition]) ;
+        System.out.println("FIRST NODE POSITION : " + firstIndexNodePosition);
+        System.out.println("FIRST NODE  : " + columnNames[firstIndexNodePosition]);
 
         Integer secondIndexNodeDepth = indices.snd;
 
@@ -542,7 +447,9 @@ public class MAGETabSDRFLoader {
             for (int columnIndex = 0; columnIndex < columnNames.length; columnIndex++) {
 
                 //THIS CREATES THE ISA STUDY SAMPLE SHEET: now dealing with descriptors that will go on the ISA study sample sheet, i.e. everything before the first Material Node after Source Node
-                if (columnIndex < firstIndexNodePosition) {   studySampleHeaders += columnNames[columnIndex] + "\t";   }
+                if (columnIndex < firstIndexNodePosition) {
+                    studySampleHeaders += columnNames[columnIndex] + "\t";
+                }
 
                 //dealing with the hinge position
                 else if (columnIndex == firstIndexNodePosition) {
@@ -551,14 +458,14 @@ public class MAGETabSDRFLoader {
                     if (!columnNames[firstIndexNodePosition].equalsIgnoreCase("sample name")) {
 
                         studySampleHeaders += "Sample Name";
-                        studyAssayHeaders = "Sample Name" + "\t" +columnNames[firstIndexNodePosition] + "\t";
+                        studyAssayHeaders = "Sample Name" + "\t" + columnNames[firstIndexNodePosition] + "\t";
 
                     }
                     // otherwise, this is easy, we just concatenate
                     else {
 
-                        studySampleHeaders += columnNames[columnIndex]+ "\t";
-                        studyAssayHeaders = columnNames[columnIndex]+ "\t";//+columnNames[firstIndexNodePosition] + "\t";
+                        studySampleHeaders += columnNames[columnIndex] + "\t";
+                        studyAssayHeaders = columnNames[columnIndex] + "\t";//+columnNames[firstIndexNodePosition] + "\t";
 
                     }
                 }
@@ -571,9 +478,7 @@ public class MAGETabSDRFLoader {
                     if (columnNames[columnIndex].equalsIgnoreCase("Hybridization Name")) {
                         columnNames[columnIndex] = "Hybridization Assay Name";
                         studyAssayHeaders += columnNames[columnIndex] + "\t";
-                    }
-
-                    else if (columnNames[columnIndex].equalsIgnoreCase("Assay Name")) {
+                    } else if (columnNames[columnIndex].equalsIgnoreCase("Assay Name")) {
                         columnNames[columnIndex] = "Assay Name";
                         studyAssayHeaders += columnNames[columnIndex] + "\t";
                     }
@@ -603,9 +508,7 @@ public class MAGETabSDRFLoader {
                     else if ((columnNames[columnIndex].equalsIgnoreCase("Scan Name")) && (tt >= 0)) {
                         columnNames[columnIndex] = "Data Transformation Name";
                         studyAssayHeaders += columnNames[columnIndex] + "\t";
-                    }
-
-                    else if (columnNames[columnIndex].equalsIgnoreCase("comment [FASTQ_URI]")) {
+                    } else if (columnNames[columnIndex].equalsIgnoreCase("comment [FASTQ_URI]")) {
                         columnNames[columnIndex] = "Raw Data File";
                         studyAssayHeaders += columnNames[columnIndex] + "\t";
                     }
@@ -620,21 +523,15 @@ public class MAGETabSDRFLoader {
                         columnNames[columnIndex] = "Data Transformation Name\tDerived Data File";
                         dataTransNameIndex = columnIndex;
                         studyAssayHeaders += columnNames[columnIndex] + "\t";
-                    }
-
-                    else if (columnNames[columnIndex].startsWith("FactorValue ")) {
+                    } else if (columnNames[columnIndex].startsWith("FactorValue ")) {
                         columnNames[columnIndex] = columnNames[columnIndex].toLowerCase();
                         columnNames[columnIndex] = columnNames[columnIndex].replaceAll("factorvalue ", "Factor Value");
                         studyAssayHeaders += columnNames[columnIndex] + "\t";
-                    }
-
-                    else if (columnNames[columnIndex].startsWith("Factor Value ")) {
+                    } else if (columnNames[columnIndex].startsWith("Factor Value ")) {
                         columnNames[columnIndex] = columnNames[columnIndex].toLowerCase();
                         columnNames[columnIndex] = columnNames[columnIndex].replaceAll("factor value ", "Factor Value");
                         studyAssayHeaders += columnNames[columnIndex] + "\t";
-                    }
-
-                    else {
+                    } else {
                         studyAssayHeaders += columnNames[columnIndex] + "\t";
                     }
                 }
@@ -647,10 +544,8 @@ public class MAGETabSDRFLoader {
 
             sdrfStudySampleTable.add(studySampleHeaders.split("\\t"));
             sdrfAssayTable.add(studyAssayHeaders.split("\\t"));
-            System.out.println("Assay Header:" + Arrays.toString(sdrfAssayTable.get(0)) );
-        }
-
-         else {
+            System.out.println("Assay Header:" + Arrays.toString(sdrfAssayTable.get(0)));
+        } else {
 
             System.out.println("SDRF Processing: REALLY?? Study Sample position is: " + firstIndexNodePosition);
 
@@ -670,7 +565,7 @@ public class MAGETabSDRFLoader {
 
                 if (sdrfRecord.length - firstIndexNodePosition > 0) {
 
-                    String[] assayRecord = new String[sdrfRecord.length - (firstIndexNodePosition+1)];
+                    String[] assayRecord = new String[sdrfRecord.length - (firstIndexNodePosition + 1)];
 
                     for (int j = 0; j < sdrfRecord.length; j++) {
 
@@ -686,16 +581,6 @@ public class MAGETabSDRFLoader {
                         //we are pushing the rest of the data to the assay table
                         else {
                             assayRecord[j - firstIndexNodePosition] = sdrfRecord[j];
-//                                    //TODO insert values
-//                                     if    ( (isPresentDT=false) && (isPresentDerivedData = true) )   {
-//                                         System.out.println("YAY, I found a pb");
-//                                        if (j <derivedArrayDataFileIndex) {
-//                                          assayRecord[j - firstIndexNodePosition] = nextLine[j];
-//                                        }
-//                                        else if (j == derivedArrayDataFileIndex) {
-//                                                 assayRecord[j - firstIndexNodePosition] = "DT";
-//                                        }
-
                         }
                     }
 
@@ -713,18 +598,16 @@ public class MAGETabSDRFLoader {
 
                 if (sdrfRecord.length - firstIndexNodePosition > 0) {
 
-                    String[] assayRecord = new String[sdrfRecord.length - (firstIndexNodePosition+1) +1];
+                    String[] assayRecord = new String[sdrfRecord.length - (firstIndexNodePosition + 1) + 1];
 
-                      for (int j = 0; j < sdrfRecord.length; j++) {
+                    for (int j = 0; j < sdrfRecord.length; j++) {
 
                         if (j < firstIndexNodePosition) {
                             sampleRecord[j] = sdrfRecord[j];
-                        }
-                        else if (j == firstIndexNodePosition) {
+                        } else if (j == firstIndexNodePosition) {
                             sampleRecord[j] = sdrfRecord[j];
                             assayRecord[j - firstIndexNodePosition] = sdrfRecord[j];
-                        }
-                        else {
+                        } else {
                             assayRecord[j - firstIndexNodePosition] = sdrfRecord[j];
                         }
                     }
@@ -733,17 +616,15 @@ public class MAGETabSDRFLoader {
 
                 }
 
-                sdrfStudySampleTable.add(sampleRecord)  ;
+                sdrfStudySampleTable.add(sampleRecord);
 
-            }
+            } else if (firstIndexNodePosition > 0 && secondIndexNodeDepth == 2) {
 
-            else if (firstIndexNodePosition > 0 && secondIndexNodeDepth == 2) {
-
-               String[] sampleRecord = new String[firstIndexNodePosition + 1];
+                String[] sampleRecord = new String[firstIndexNodePosition + 1];
 
                 if (sdrfRecord.length - firstIndexNodePosition > 0) {
 
-                    String[] assayRecord = new String[sdrfRecord.length - (firstIndexNodePosition+1) + 1];
+                    String[] assayRecord = new String[sdrfRecord.length - (firstIndexNodePosition + 1) + 1];
 
                     for (int j = 0; j < sdrfRecord.length; j++) {
 
@@ -762,15 +643,13 @@ public class MAGETabSDRFLoader {
 
                 sdrfStudySampleTable.add(sampleRecord);
 
-            }
-
-            else if (firstIndexNodePosition > 0 && secondIndexNodeDepth == 3) {
+            } else if (firstIndexNodePosition > 0 && secondIndexNodeDepth == 3) {
 
                 String[] sampleRecord = new String[firstIndexNodePosition + 1];
 
-                 if (sdrfRecord.length - firstIndexNodePosition > 0) {
+                if (sdrfRecord.length - firstIndexNodePosition > 0) {
 
-                    String[] assayRecord = new String[sdrfRecord.length - (firstIndexNodePosition+1) + 2];
+                    String[] assayRecord = new String[sdrfRecord.length - (firstIndexNodePosition + 1) + 2];
 
                     for (int j = 0; j < sdrfRecord.length; j++) {
 
@@ -787,7 +666,7 @@ public class MAGETabSDRFLoader {
                     sdrfAssayTable.add(assayRecord);
                 }
 
-                sdrfStudySampleTable.add(sampleRecord)  ;
+                sdrfStudySampleTable.add(sampleRecord);
             }
 
 
@@ -797,39 +676,37 @@ public class MAGETabSDRFLoader {
         // THIS CODE SECTION IS MEANT TO RETROFIT ANY FACTOR VALUES TO THE STUDY SAMPLE SPREADSHEET
         // The underlying assumption is that the factors are the same, even in the case of multiple SDRF
         // TODO: be able to create a sparse matrix of experimental factor.
-        ArrayList<String[]> sdrfStudySampleTableCumFactors=new ArrayList<String[]>();
+        List<String[]> sdrfStudySampleTableFactors = new ArrayList<String[]>();
 
-        for (int k=0; k<sdrfStudySampleTable.size(); k++) {
+        for (int rowIndex = 0; rowIndex < sdrfStudySampleTable.size(); rowIndex++) {
             //  we are now splicing the 2 records sections, that corresponding to the sample descriptions and that detailing the factor set
-            if (sdrfStudySampleTable.get(k)[0].equalsIgnoreCase(factorSheetData.get(k)[0])) {
+            if (sdrfStudySampleTable.get(rowIndex)[0].equalsIgnoreCase(factorSheetData.get(rowIndex)[0])) {
 
-               String[] tempRecord=sdrfStudySampleTable.get(k);
-                
-               String[] tempFactorRecord=factorSheetData.get(k);
-                
-               String[] newRecord = new String[tempRecord.length+tempFactorRecord.length-1];
+                String[] tempRecord = sdrfStudySampleTable.get(rowIndex);
 
-                System.arraycopy(tempRecord, 0, newRecord,0,tempRecord.length);
-                
-                System.arraycopy(tempFactorRecord,1,newRecord,tempRecord.length,tempFactorRecord.length-1);
+                String[] tempFactorRecord = factorSheetData.get(rowIndex);
 
-               // System.out.println("GREAT"+ Arrays.toString(newRecord));
+                String[] newRecord = new String[tempRecord.length + tempFactorRecord.length - 1];
 
-                sdrfStudySampleTableCumFactors.add(newRecord);
-           }
+                System.arraycopy(tempRecord, 0, newRecord, 0, tempRecord.length);
+
+                System.arraycopy(tempFactorRecord, 1, newRecord, tempRecord.length, tempFactorRecord.length - 1);
+
+                sdrfStudySampleTableFactors.add(newRecord);
+            }
         }
-        return new Pair<ArrayList<String[]>, ArrayList<String[]>>(sdrfStudySampleTableCumFactors, sdrfAssayTable);
-   }
+        return new Pair<List<String[]>, List<String[]>>(sdrfStudySampleTableFactors, sdrfAssayTable);
+    }
 
-   /*
-   A Method inspecting the SDRF assay table resulting from splitting an SDRF and identifying the potential to split further into several asssay
-   in case SDRF contains more than one assay type.
-   The method returns a HashMap where the key as assay type and the values are ArrayList of assay records.
+    /*
+      A Method inspecting the SDRF assay table resulting from splitting an SDRF and identifying the potential to split
+      further into several assay in case SDRF contains more than one assay type.
+      The method returns a HashMap where the key as assay type and the values are ArrayList of assay records.
     */
-    private  List<Assay>  inspectSdrfAssay(ArrayList<String[]> sdrfAssayTableAsInput) {
+    private List<Assay> inspectSdrfAssay(List<String[]> sdrfAssayTableAsInput) {
 
         //a data structure to hold the different assay types found when iterating over the sdrf assay sheet
-        ArrayList<Assay> assaysFromGivenSDRF =new ArrayList<Assay>();
+        List<Assay> assaysFromGivenSDRF = new ArrayList<Assay>();
 
         Assay chipSeqAssay = new Assay();
         Assay geneChipAssay = new Assay();
@@ -837,26 +714,30 @@ public class MAGETabSDRFLoader {
         Assay TFSeqAssay = new Assay();
         Assay rnaSeqAssay = new Assay();
 
-        ArrayList<String[]> chipSeqRecords = new ArrayList<String[]>() ;
+        List<String[]> chipSeqRecords = new ArrayList<String[]>();
         chipSeqRecords.add(sdrfAssayTableAsInput.get(0));
-        ArrayList<String[]> rnaSeqRecords = new ArrayList<String[]>() ;
+
+        List<String[]> rnaSeqRecords = new ArrayList<String[]>();
         rnaSeqRecords.add(sdrfAssayTableAsInput.get(0));
-        ArrayList<String[]> meSeqRecords = new ArrayList<String[]>() ;
+
+        List<String[]> meSeqRecords = new ArrayList<String[]>();
         meSeqRecords.add(sdrfAssayTableAsInput.get(0));
-        ArrayList<String[]> tfSeqRecords = new ArrayList<String[]>() ;
+
+        List<String[]> tfSeqRecords = new ArrayList<String[]>();
         tfSeqRecords.add(sdrfAssayTableAsInput.get(0));
-        ArrayList<String[]> genechipRecords = new ArrayList<String[]>() ;
+
+        List<String[]> genechipRecords = new ArrayList<String[]>();
         genechipRecords.add(sdrfAssayTableAsInput.get(0));
 
         Set<String> aTypeUnique = new HashSet<String>();
 
-        for (int k=1; k<sdrfAssayTableAsInput.size(); k++) {
+        for (int rowIndex = 1; rowIndex < sdrfAssayTableAsInput.size(); rowIndex++) {
 
-            String[] thisAssayRecord=sdrfAssayTableAsInput.get(k);
+            String[] thisAssayRecord = sdrfAssayTableAsInput.get(rowIndex);
+            // This is only checking the contents of the assay file itself for the type of experiment. We should also
+            // rely on the study design type in the investigation file.
 
-            //System.out.println(Arrays.toString(thisAssayRecord));
-
-            if (getArrayAsString(thisAssayRecord).contains("ChIP-Seq")) {
+            if (getArrayAsString(thisAssayRecord).toLowerCase().contains("chip-seq") || ConversionProperties.isValueInDesignTypes("chip-seq")) {
                 aTypeUnique.add("ChIP-Seq");
                 chipSeqRecords.add(thisAssayRecord);
             }
@@ -866,83 +747,74 @@ public class MAGETabSDRFLoader {
                 rnaSeqRecords.add(thisAssayRecord);
             }
 
-            if (
-                    (getArrayAsString(thisAssayRecord).contains("Bisulfite-Seq")) ||
-                            (getArrayAsString(thisAssayRecord).contains("MRE-Seq")) ||
-                            (getArrayAsString(thisAssayRecord).contains("MBD-Seq")) ||
-                            (getArrayAsString(thisAssayRecord).contains("MeDIP-Seq "))
-                    ) {
+            if ((getArrayAsString(thisAssayRecord).contains("Bisulfite-Seq")) || (getArrayAsString(thisAssayRecord).contains("MRE-Seq"))
+                    || (getArrayAsString(thisAssayRecord).contains("MBD-Seq")) || (getArrayAsString(thisAssayRecord).contains("MeDIP-Seq "))) {
 
                 aTypeUnique.add("ME-Seq");
                 meSeqRecords.add(thisAssayRecord);
             }
-            if (
-                    (getArrayAsString(thisAssayRecord).contains("DNase-Hypersensitivity")) ||
-                            (getArrayAsString(thisAssayRecord).contains("MNase-Seq"))
-                    ) {
-
+            if ((getArrayAsString(thisAssayRecord).contains("DNase-Hypersensitivity")) || (getArrayAsString(thisAssayRecord).contains("MNase-Seq"))) {
                 aTypeUnique.add("Chromatin-Seq");
                 tfSeqRecords.add(thisAssayRecord);
 
             }
-            if (
-                    (getArrayAsString(thisAssayRecord).contains("Hybridization")) ||
-                    (getArrayAsString(thisAssayRecord).contains("biotin"))
-            ){
+            if ((getArrayAsString(thisAssayRecord).contains("Hybridization")) || (getArrayAsString(thisAssayRecord).contains("biotin"))) {
                 aTypeUnique.add("Hybridization");
                 genechipRecords.add(thisAssayRecord);
             }
         }
 
-      for (String assaytype: aTypeUnique) {
-          if (assaytype.contains("Hybridization"))  {
-              HashMap<String, ArrayList<String[]>> theOne = new HashMap<String, ArrayList<String[]>>();
-              theOne.put("GeneChip",genechipRecords);
-              geneChipAssay.setAssayLevelInformation(theOne);
-              assaysFromGivenSDRF.add(geneChipAssay);
+        System.out.println("Assay type size " + aTypeUnique.size());
+        for (String assaytype : aTypeUnique) {
+            if (assaytype.contains("Hybridization")) {
+                Map<String, List<String[]>> theOne = new HashMap<String, List<String[]>>();
+                theOne.put("GeneChip", genechipRecords);
+                geneChipAssay.setAssayLevelInformation(theOne);
+                assaysFromGivenSDRF.add(geneChipAssay);
 
-          }
-           if (assaytype.contains("transcription profiling by array"))  {
-               HashMap<String, ArrayList<String[]>> theOne = new HashMap<String, ArrayList<String[]>>();
-               theOne.put("genechip",genechipRecords);
-               geneChipAssay.setAssayLevelInformation(theOne);
-               assaysFromGivenSDRF.add(geneChipAssay);
-           }
-           if (assaytype.contains("ChIP-Seq"))  {
-               HashMap<String, ArrayList<String[]>> theOne = new HashMap<String, ArrayList<String[]>>();
-               theOne.put("ChIP-Seq",chipSeqRecords);
-               chipSeqAssay.setAssayLevelInformation(theOne);
-               assaysFromGivenSDRF.add(chipSeqAssay);
-           
-           }
-           if (assaytype.contains("RNA-Seq"))  {
-               HashMap<String, ArrayList<String[]>> theOne = new HashMap<String, ArrayList<String[]>>();
-               theOne.put("RNA-Seq",rnaSeqRecords);
-               rnaSeqAssay.setAssayLevelInformation(theOne);
-               assaysFromGivenSDRF.add(rnaSeqAssay);
-           }
-           if (assaytype.contains("ME-Seq"))  {
-               HashMap<String, ArrayList<String[]>> theOne = new HashMap<String, ArrayList<String[]>>();
-               theOne.put("ME-Seq",meSeqRecords);
-               meSeqAssay.setAssayLevelInformation(theOne);
-               assaysFromGivenSDRF.add(meSeqAssay);
-           }
-           if (assaytype.contains("Chromatin-Seq"))  {
-               HashMap<String, ArrayList<String[]>> theOne = new HashMap<String, ArrayList<String[]>>();
-               theOne.put("Chromatin-Seq",tfSeqRecords);
-               TFSeqAssay.setAssayLevelInformation(theOne);
-               assaysFromGivenSDRF.add(TFSeqAssay);
-           }
-     }
+            }
+            if (assaytype.contains("transcription profiling by array")) {
+                Map<String, List<String[]>> theOne = new HashMap<String, List<String[]>>();
+                theOne.put("genechip", genechipRecords);
+                geneChipAssay.setAssayLevelInformation(theOne);
+                assaysFromGivenSDRF.add(geneChipAssay);
+            }
+            if (assaytype.contains("ChIP-Seq")) {
+                Map<String, List<String[]>> theOne = new HashMap<String, List<String[]>>();
+                theOne.put("ChIP-Seq", chipSeqRecords);
+                chipSeqAssay.setAssayLevelInformation(theOne);
+                assaysFromGivenSDRF.add(chipSeqAssay);
+
+            }
+            if (assaytype.contains("RNA-Seq")) {
+                Map<String, List<String[]>> theOne = new HashMap<String, List<String[]>>();
+                theOne.put("RNA-Seq", rnaSeqRecords);
+                rnaSeqAssay.setAssayLevelInformation(theOne);
+                assaysFromGivenSDRF.add(rnaSeqAssay);
+            }
+            if (assaytype.contains("ME-Seq")) {
+                Map<String, List<String[]>> theOne = new HashMap<String, List<String[]>>();
+                theOne.put("ME-Seq", meSeqRecords);
+                meSeqAssay.setAssayLevelInformation(theOne);
+                assaysFromGivenSDRF.add(meSeqAssay);
+            }
+            if (assaytype.contains("Chromatin-Seq")) {
+                Map<String, List<String[]>> theOne = new HashMap<String, List<String[]>>();
+                theOne.put("Chromatin-Seq", tfSeqRecords);
+                TFSeqAssay.setAssayLevelInformation(theOne);
+                assaysFromGivenSDRF.add(TFSeqAssay);
+            }
+        }
         //TODO: this is inefficient! assigment should occur earlier
 
 
         //We now output an assay spreadsheet for each assay type identified when scanning through the SDRF
         //TODO: if there is a mismatch between assayCountinIDF and assayCountinSDRF, need to retrofit assaysFromGivenSDRF in IDF
 
+        System.out.println("There are " + assaysFromGivenSDRF.size() + " assays in this SDRF.");
 
-        return  new ArrayList<Assay>(assaysFromGivenSDRF) ;
+        return new ArrayList<Assay>(assaysFromGivenSDRF);
 
-    }   
+    }
 
 }

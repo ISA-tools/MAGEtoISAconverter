@@ -12,16 +12,13 @@ public class CollapseColumnUtil {
     private String lookingFor;
 
     private Map<Integer, Integer> selectCandidates(String[] columnNames) {
-
         Map<Integer, Integer> candidates = new HashMap<Integer, Integer>();
 
         int startIndex = -1;
         int length = 0;
 
         for (int columnIndex = 0; columnIndex < columnNames.length; columnIndex++) {
-
             if (columnNames[columnIndex].contains(lookingFor)) {
-
                 if (startIndex == -1) {
                     startIndex = columnIndex;
                 }
@@ -77,14 +74,8 @@ public class CollapseColumnUtil {
                 }
             }
         }
-
-
-
         Map<Integer, List<String[]>> protocolBlocks = createNewProtocolBlock(rowToProtocolValues);
-
         return reconstructSpreadsheetAfterProcessing(protocolBlocks, candidates, spreadsheet);
-
-
     }
 
     private Map<Integer, List<String[]>> createNewProtocolBlock(Map<Integer, Map<Integer, Set<String>>> rowToProtocolValues) {
@@ -114,7 +105,6 @@ public class CollapseColumnUtil {
                     builtProtocolBlocks.put(startIndex, new ArrayList<String[]>());
                     builtProtocolBlocks.get(startIndex).add(createHeaderBlock(numberOfProtocols));
                 }
-
                 builtProtocolBlocks.get(startIndex).add(protocols);
             }
         }
@@ -192,20 +182,4 @@ public class CollapseColumnUtil {
         return maxProtocols;
     }
 
-    public static void main(String[] args) {
-
-
-        List<String[]> testList;
-        try {
-            Loader loader = new Loader();
-            testList = loader.loadSheet("DownloadedMAGEFiles/E-GEOD-11172/E-GEOD-11172.sdrf.txt", FileType.TAB);
-            CollapseColumnUtil util = new CollapseColumnUtil();
-
-            util.processSpreadsheet(testList, "Protocol REF");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-
-    }
 }

@@ -7,21 +7,21 @@ import java.util.List;
 public class Study {
 
 
-    public ArrayList<String[]> studySampleLevelInformation;
+    public List<String[]> studySampleLevelInformation;
 
     public List<Assay> assays;
 
-    public Study(ArrayList<String[]> studySampleLevelInformation, List<Assay> assays) {
+    public Study(List<String[]> studySampleLevelInformation, List<Assay> assays) {
         this.studySampleLevelInformation = studySampleLevelInformation;
         this.assays = assays;
 
     }
 
-    public void setStudySampleLevelInformation(ArrayList<String[]> studySampleLevelInformation) {
+    public void setStudySampleLevelInformation(List<String[]> studySampleLevelInformation) {
         this.studySampleLevelInformation = studySampleLevelInformation;
     }
 
-    public ArrayList<String[]> getStudySampleLevelInformation() {
+    public List<String[]> getStudySampleLevelInformation() {
             return studySampleLevelInformation;
     }
 

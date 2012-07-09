@@ -3,6 +3,7 @@ package org.isatools.magetoisatab.io;
 import org.apache.log4j.Logger;
 import org.isatools.magetoisatab.io.model.AssayType;
 import org.isatools.magetoisatab.io.model.Study;
+import org.isatools.magetoisatab.utils.ConversionProperties;
 import org.isatools.magetoisatab.utils.PrintUtils;
 
 import java.io.File;
@@ -65,7 +66,7 @@ public class MAGETabIDFLoader {
     public List<String> dateLines;
 
 
-    public Map<Integer, String> IsaOntoSection = new HashMap<Integer, String>() {
+    public Map<Integer, String> isaOntoSection = new HashMap<Integer, String>() {
         {
             put(0, "Term Source Name");
             put(1, "Term Source File");
@@ -93,7 +94,7 @@ public class MAGETabIDFLoader {
     };
 
     //HashMap initialization to define canonical block structure
-    public Map<Integer, String> IsaProtocolSection = new HashMap<Integer, String>() {
+    public Map<Integer, String> isaProtocolSection = new HashMap<Integer, String>() {
         {
             put(0, "Study Protocol Name");
             put(1, "Study Protocol Type");
@@ -114,7 +115,7 @@ public class MAGETabIDFLoader {
 
 
     //HashMap initialization to define canonical block structure
-    public Map<Integer, String> IsaContactSection = new HashMap<Integer, String>() {
+    public Map<Integer, String> isaContactSection = new HashMap<Integer, String>() {
         {
             put(0, "Study Person Last Name");
             put(1, "Study Person First Name");
@@ -230,6 +231,10 @@ public class MAGETabIDFLoader {
 
                             line = line.replaceFirst("Experimental Design", "Study Design Type");
                             designLines.set(0, line);
+
+                            for(String designType : designLines) {
+                                ConversionProperties.addDesignType(designType);
+                            }
                         }
 
                         //This bit is used to recover information for setting ISA MT and TT in case no Experimental Design is found
@@ -239,32 +244,27 @@ public class MAGETabIDFLoader {
 
                             cmtDesignTypes = line.split("\\t");
 
+                            for(String designType : cmtDesignTypes) {
+                                ConversionProperties.addDesignType(designType);
+                            }
+
                             line = line.replace("Comment[AEExperimentType]", "Study Design Type");
+
+
                             designLines.set(0, line);
 
                         } else if (line.startsWith("SDRF File")) {
-
 
                             sdrfFileNames = line.split("\\t");
 
                             System.out.println("number of SDRF files: " + (sdrfFileNames.length - 1));
 
-                            if (sdrfFileNames.length >= 1) {
-
-                                //There is more than one SDRF file listed in this submission, now iterating throw them:");
-
-                                for (int counter = 1; counter < sdrfFileNames.length; counter++) {
-
-                                    String sdrfUrl = "http://www.ebi.ac.uk/arrayexpress/files/" + accnum + "/" + sdrfFileNames[counter];
-
-                                    sdrfDownloadLocation[counter] = DownloadUtils.TMP_DIRECTORY + File.separator + accnum + File.separator + sdrfFileNames[counter];
-
-                                    DownloadUtils.downloadFile(sdrfUrl, sdrfDownloadLocation[counter]);
-
-                                    System.out.println("SDRF found and downloaded: " + sdrfUrl);
-
-                                }
-
+                            //There is more than one SDRF file listed in this submission, now iterating through them:");
+                            for (int sdrfFileIndex = 0; sdrfFileIndex < sdrfFileNames.length; sdrfFileIndex++) {
+                                String sdrfUrl = "http://www.ebi.ac.uk/arrayexpress/files/" + accnum + "/" + sdrfFileNames[sdrfFileIndex];
+                                sdrfDownloadLocation[sdrfFileIndex] = DownloadUtils.TMP_DIRECTORY + File.separator + accnum + File.separator + sdrfFileNames[sdrfFileIndex];
+                                DownloadUtils.downloadFile(sdrfUrl, sdrfDownloadLocation[sdrfFileIndex]);
+                                System.out.println("SDRF found and downloaded: " + sdrfUrl);
                             }
 
                             line = line.replaceFirst("SDRF File", "Study Assay File Name");
@@ -294,24 +294,24 @@ public class MAGETabIDFLoader {
 
                             String tempLine = "";
                             tempLine = removeDuplicates(line);
-                            IsaOntoSection.put(0, tempLine);
+                            isaOntoSection.put(0, tempLine);
 
                         } else if (line.startsWith("Term Source File")) {
 
                             String tempLine = "";
                             tempLine = removeDuplicates(line);
-                            IsaOntoSection.put(2, tempLine);
+                            isaOntoSection.put(2, tempLine);
 
                         } else if (line.startsWith("Term Source Version")) {
                             String tempLine = "";
                             tempLine = removeDuplicates(line);
-                            IsaOntoSection.put(1, tempLine);
+                            isaOntoSection.put(1, tempLine);
 
                         } else if (line.startsWith("Term Source Description")) {
 
                             String tempLine = "";
                             tempLine = removeDuplicates(line);
-                            IsaOntoSection.put(3, tempLine);
+                            isaOntoSection.put(3, tempLine);
 
                         }
 
@@ -343,7 +343,6 @@ public class MAGETabIDFLoader {
 
                 for (String designLine : designLines) {
                     invPs.println(designLine);
-
                 }
 
 
@@ -388,7 +387,6 @@ public class MAGETabIDFLoader {
                     invPs.println(factorLine);
                 }
 
-
                 //Now creating the Assay Section:
                 invPs.println("STUDY ASSAYS");
 
@@ -407,14 +405,13 @@ public class MAGETabIDFLoader {
 
                 invPs.println(measurementTypes);
                 invPs.println("Study Assay Measurement Type Term Accession Number\n" +
-                        "Study Assay Measurement Type Term Source REF");
+                              "Study Assay Measurement Type Term Source REF");
 
 
                 invPs.println(technologyTypes);
                 invPs.println("Study Assay Technology Type Term Accession Number\n" +
-                        "Study Assay Technology Type Term Source REF\n" +
-                        "Study Assay Technology Platform");
-
+                              "Study Assay Technology Type Term Source REF\n" +
+                              "Study Assay Technology Platform");
 
                 String assayfilenames = "Study Assay File Name";
 
@@ -423,12 +420,10 @@ public class MAGETabIDFLoader {
 
                 //case1: there is only SDRF and we rely on the information found under Comment[AEexperimentTypes]
                 //NOTE: caveat: AE is inconsistent and encode various measurement types under the same spreadsheet for sequencing applications
-                if ((assayTTMT.size() > 0) && ((sdrfFileNames.length - 1) == 1)) {
+                if (assayTTMT.size() > 0) {
 
                     for (AssayType anAssayTTMT : assayTTMT) {       //we start at 1 as the first element of the array is the header "
-
                         assayfilenames = assayfilenames + "\ta_" + accnum + "_" + anAssayTTMT.getShortcut() + "_assay.txt";
-
                         System.out.println("CASE1: " + anAssayTTMT.getShortcut());
                     }
 
@@ -436,47 +431,39 @@ public class MAGETabIDFLoader {
                 }
 
                 //case2: there are more than 1 SDRF and we rely on the information found under Comment[AEexperimentTypes]
-                else if ((sdrfFileNames.length > 1) && (cmtDesignTypes.length - 1 > 1) && (sdrfFileNames.length == cmtDesignTypes.length)) {
+                else if ((sdrfFileNames.length > 0) && (sdrfFileNames.length == cmtDesignTypes.length)) {
 
-                    for (int i = 1; i < cmtDesignTypes.length; i++) { //we start at 1 as the first element of the array is the header "
-                        // System.out.println("design-before: "+cmtDesignTypes[i]);
+                    for (int studyDesign = 0; studyDesign < cmtDesignTypes.length; studyDesign++) { //we start at 1 as the first element of the array is the header "
 
-                        if (cmtDesignTypes[i].toLowerCase().contains("chip-seq")) {
+                        if (cmtDesignTypes[studyDesign].toLowerCase().contains("chip-seq")) {
 
                             for (AssayType anAssayTTMT : assayTTMT) {
                                 if ((anAssayTTMT.getMeasurement().equalsIgnoreCase("protein-DNA binding site identification")) &&
-                                        (anAssayTTMT.getTechnology().equalsIgnoreCase("nucleotide sequencing")))
-
-                                {
-                                    cmtDesignTypes[i] = cmtDesignTypes[i].replaceAll("ChIP-seq", "ChIP-Seq");
-                                    anAssayTTMT.setFile(cmtDesignTypes[i]);
+                                        (anAssayTTMT.getTechnology().equalsIgnoreCase("nucleotide sequencing"))) {
+                                    cmtDesignTypes[studyDesign] = cmtDesignTypes[studyDesign].replaceAll("\\?iChIP-seq", "ChIP-Seq");
+                                    anAssayTTMT.setFile(cmtDesignTypes[studyDesign]);
                                 }
                             }
                         }
 
-                        if (cmtDesignTypes[i].toLowerCase().contains("transcription profiling by array")) {
+                        if (cmtDesignTypes[studyDesign].toLowerCase().contains("transcription profiling by array")) {
                             for (AssayType anAssayTTMT : assayTTMT) {
 
                                 if ((anAssayTTMT.getMeasurement().equalsIgnoreCase("transcription profiling")) &&
                                         (anAssayTTMT.getTechnology().equalsIgnoreCase("DNA microarray"))) {
 
-                                    // System.out.println("design-after-1st: "+cmtDesignTypes[i]);
-                                    cmtDesignTypes[i] = cmtDesignTypes[i].replaceAll("transcription profiling by array", "GeneChip");
-                                    anAssayTTMT.setFile(cmtDesignTypes[i]);
+                                    // System.out.println("design-after-1st: "+cmtDesignTypes[studyDesign]);
+                                    cmtDesignTypes[studyDesign] = cmtDesignTypes[studyDesign].replaceAll("transcription profiling by array", "GeneChip");
+                                    anAssayTTMT.setFile(cmtDesignTypes[studyDesign]);
                                 }
                             }
-                            // System.out.println("design-after-2nd: "+cmtDesignTypes[i]);
                         }
-
                     }
 
 
                     for (AssayType anAssayTTMT : assayTTMT) {
                         assayfilenames = assayfilenames + "\ta_" + accnum + "_" + anAssayTTMT.getFile().replaceAll("\\s", "_") + "_assay.txt";
                     }
-                    //need to reorder to match MT and TT declaration:
-
-
                     System.out.println("CASE2: " + assayfilenames);
                 }
 
@@ -493,44 +480,44 @@ public class MAGETabIDFLoader {
                     for (String protocolLine : investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION)) {
 
                         if (protocolLine.contains("Name")) {
-                            IsaProtocolSection.put(0, protocolLine);
+                            isaProtocolSection.put(0, protocolLine);
                         }
 
                         if (protocolLine.contains("Type")) {
-                            IsaProtocolSection.put(1, protocolLine);
+                            isaProtocolSection.put(1, protocolLine);
                         }
 
                         if (protocolLine.contains("Accession")) {
                             String tempAcc = protocolLine.replaceAll("Term Accession", "Type Term Accession");
-                            IsaProtocolSection.put(2, tempAcc);
+                            isaProtocolSection.put(2, tempAcc);
                         }
 
                         if (protocolLine.contains("Term Source")) {
                             String tempSource = protocolLine.replaceAll("Term Source", "Type Term Source");
-                            IsaProtocolSection.put(3, tempSource);
+                            isaProtocolSection.put(3, tempSource);
                         }
 
                         if (protocolLine.contains("Description")) {
-                            IsaProtocolSection.put(4, protocolLine);
+                            isaProtocolSection.put(4, protocolLine);
                         }
 
                         if (protocolLine.endsWith("Parameters")) {
 
                             String tempParam = protocolLine.replaceAll("Parameters", "Parameters Name");
-                            IsaProtocolSection.put(5, tempParam);
+                            isaProtocolSection.put(5, tempParam);
                         }
 
                         if ((protocolLine.contains("Software")) || (protocolLine.contains("Hardware"))) {
 
                             String tempComponent = protocolLine.replaceAll("Software", "Components Name");
                             tempComponent = tempComponent.replaceAll("Hardware", "Components Name");
-                            IsaProtocolSection.put(10, tempComponent);
+                            isaProtocolSection.put(10, tempComponent);
                         }
                     }
                 }
 
                 //we now output the Protocol Section of an ISA Study
-                for (Map.Entry<Integer, String> e : IsaProtocolSection.entrySet())
+                for (Map.Entry<Integer, String> e : isaProtocolSection.entrySet())
                     invPs.println(e.getValue());
 
 
@@ -542,64 +529,46 @@ public class MAGETabIDFLoader {
                     for (String contactLine : investigationSections.get(InvestigationSections.STUDY_CONTACT_SECTION)) {
 
                         if (contactLine.contains("Last")) {
-                            IsaContactSection.put(0, contactLine);
+                            isaContactSection.put(0, contactLine);
                         }
                         if (contactLine.contains("First")) {
-                            IsaContactSection.put(1, contactLine);
+                            isaContactSection.put(1, contactLine);
                         }
                         if (contactLine.contains("Mid")) {
-                            IsaContactSection.put(2, contactLine);
+                            isaContactSection.put(2, contactLine);
                         }
                         if (contactLine.contains("Email")) {
-                            IsaContactSection.put(3, contactLine);
+                            isaContactSection.put(3, contactLine);
                         }
                         if (contactLine.contains("Phone")) {
-                            IsaContactSection.put(4, contactLine);
+                            isaContactSection.put(4, contactLine);
                         }
                         if (contactLine.contains("Fax")) {
-                            IsaContactSection.put(5, contactLine);
+                            isaContactSection.put(5, contactLine);
                         }
                         if (contactLine.contains("Address")) {
-                            IsaContactSection.put(6, contactLine);
+                            isaContactSection.put(6, contactLine);
                         }
                         if (contactLine.contains("Affiliation")) {
-                            IsaContactSection.put(7, contactLine);
+                            isaContactSection.put(7, contactLine);
                         }
                         if ((contactLine.contains("Roles") && !(contactLine.contains("Roles Term")))) {
 
-                            IsaContactSection.put(8, contactLine);
+                            isaContactSection.put(8, contactLine);
                         }
                     }
 
                     //we now output the Contact Section of an ISA Study
-                    for (Map.Entry<Integer, String> e : IsaContactSection.entrySet())
+                    for (Map.Entry<Integer, String> e : isaContactSection.entrySet())
                         invPs.println(e.getValue());
 
 
-                    //for each sdrf found in the IDF, perform processing
-                    if ((sdrfFileNames.length - 1 == 1)) {      //the regular situation, one SDRF per MAGE-TAB file
-
-                        MAGETabSDRFLoader sdrfloader = new MAGETabSDRFLoader();
-
-                        Study study = sdrfloader.loadsdrfTab(sdrfDownloadLocation[1], accnum);
-
+                    for (String sdrfFile : sdrfFileNames) {
                         PrintUtils pu = new PrintUtils();
 
                         PrintStream ps = new PrintStream(new File(DownloadUtils.CONVERTED_DIRECTORY + File.separator + accnum + "/s_" + accnum + "_" + "study_samples.txt"));
 
-                        pu.printStudySamplesAndAssays(ps, study, accnum);
-
-                        //closing file handle
-                        ps.flush();
-                        ps.close();
-
-                    } else {   //in case there are more than 1 SDRF file declared
-
-                        PrintUtils pu = new PrintUtils();
-
-                        PrintStream ps = new PrintStream(new File(DownloadUtils.CONVERTED_DIRECTORY + File.separator + accnum + "/s_" + accnum + "_" + "study_samples.txt"));
-
-                        List<LinkedHashMap<String, ArrayList<String>>> Studies = new ArrayList<LinkedHashMap<String, ArrayList<String>>>();
+                        List<Map<String, List<String>>> studies = new ArrayList<Map<String, List<String>>>();
 
                         //we start at 1 as the first element of the sdrfFilenames array corresponds to the ISA Study File Name tag
                         for (int counter = 1; counter < sdrfFileNames.length; counter++) {
@@ -610,44 +579,37 @@ public class MAGETabIDFLoader {
 
                             Study study = sdrfloader.loadsdrfTab(sdrfDownloadLocation[counter], accnum);
 
-                            LinkedHashMap<String, ArrayList<String>> table = new LinkedHashMap<String, ArrayList<String>>();
+                            Map<String, List<String>> table = new LinkedHashMap<String, List<String>>();
 
-                            //for every
                             for (int i = 0; i < study.getStudySampleLevelInformation().get(0).length; i++) {
 
                                 String key = study.getStudySampleLevelInformation().get(0)[i];
 
-                                ArrayList<String> values = new ArrayList<String>();
+                                List<String> values = new ArrayList<String>();
 
                                 for (int k = 1; k < study.getStudySampleLevelInformation().size(); k++) {
-
                                     String value = study.getStudySampleLevelInformation().get(k)[i];
-
                                     if (value != null) {
                                         values.add(value);
                                     }
-
                                 }
 
                                 table.put(key, values);
 
                             }
 
-                            Studies.add(table);
-
-                            //TODO: for each study object, create a new Pair of ArrayList of String[], one holding the various study-sample tables
-                            //which will require processing for fusing them
-                            //accumulate the assays if needed.
-                            //TODO: when more than one SDRF is found, additional Processing maybe needed to support creation of an investigation
+                            studies.add(table);
 
                             pu.printStudySamplesAndAssays(ps, study, accnum);
+
+                            ps.flush();
+                            ps.close();
                         }
 
-
-                        mergeTables(Studies);
+                        mergeTables(studies);
 
                         //this set's keys are the final header of the merged study sample file
-                        Set<String> tableKeyset = mergeTables(Studies).keySet();
+                        Set<String> tableKeyset = mergeTables(studies).keySet();
                         String finalStudyTableHeader = "";
 
                         //we now splice the header together by concatenating the key
@@ -661,27 +623,25 @@ public class MAGETabIDFLoader {
 
                         int numberOfSampleRecords;
 
-                        ArrayList<String> guestList = new ArrayList<String>();
-                        guestList = (ArrayList<String>) mergeTables(Studies).get("Sample Name");
+                        List<String> guestList = mergeTables(studies).get("Sample Name");
 
                         numberOfSampleRecords = guestList.size();
 
                         Set<String> finalStudyTable = new HashSet<String>();
 
-                        for (int i = 0; i < numberOfSampleRecords; i++) {
+                        for (int sampleRecordIndex = 0; sampleRecordIndex < numberOfSampleRecords; sampleRecordIndex++) {
 
                             String studyRecord = "";
 
-                            for (Object key : mergeTables(Studies).keySet()) {
+                            for (String key : mergeTables(studies).keySet()) {
 
                                 //obtain the list associated to that given key
-                                ArrayList<String> correspondingList = new ArrayList<String>();
-                                correspondingList = (ArrayList<String>) mergeTables(Studies).get(key);
+                                List<String> correspondingList = mergeTables(studies).get(key);
 
                                 // now obtain the ith element of that associated list
-                                if (i < correspondingList.size()) {
+                                if (sampleRecordIndex < correspondingList.size()) {
 
-                                    studyRecord += correspondingList.get(i) + "\t";
+                                    studyRecord += correspondingList.get(sampleRecordIndex) + "\t";
                                 } else {
                                     studyRecord += "" + "\t";
                                 }
@@ -716,7 +676,7 @@ public class MAGETabIDFLoader {
         //Outputting the ISA-TAB Ontology Section
         invPs.println("ONTOLOGY SOURCE REFERENCE");
 
-        for (Map.Entry<Integer, String> e : IsaOntoSection.entrySet())
+        for (Map.Entry<Integer, String> e : isaOntoSection.entrySet())
             invPs.println(e.getValue());
     }
 
@@ -757,30 +717,32 @@ public class MAGETabIDFLoader {
         }
     }
 
-    private LinkedHashMap<String, List<String>> mergeTables(List<LinkedHashMap<String, ArrayList<String>>> studies) {
+    private Map<String, List<String>> mergeTables(List<Map<String, List<String>>> studies) {
 
-        int i = 0;
+        Set<String> allKeys = new LinkedHashSet<String>();
+        Map<String, List<String>> resultMap = new LinkedHashMap<String, List<String>>();
 
-        LinkedHashSet<String> allKeys = new LinkedHashSet<String>();
+        for (Map<String, List<String>> tables : studies) {
+            allKeys.addAll(tables.keySet());
+        }
 
-        LinkedHashMap<String, List<String>> resultMap = new LinkedHashMap<String, List<String>>();
+        for (String key : allKeys) {
 
-        allKeys.addAll(studies.get(i).keySet());
-        allKeys.addAll(studies.get(i + 1).keySet());
+            List<List<String>> keyLists = new ArrayList<List<String>>();
 
-        for (String k : allKeys) {
-
-            ArrayList<String> i1 = studies.get(i).containsKey(k) ? studies.get(i).get(k) : null;
-            ArrayList<String> i2 = studies.get(i + 1).containsKey(k) ? studies.get(i + 1).get(k) : null;
-
-            ArrayList<String> newList = new ArrayList<String>(i1);
-
-            if (i2 != null) {
-                newList.addAll(i2);
+            for (Map<String, List<String>> tables : studies) {
+                if (tables.containsKey(key)) {
+                    keyLists.add(tables.get(key));
+                }
             }
 
-            resultMap.put(k, newList);
+            List<String> newList = new ArrayList<String>();
 
+            for (List<String> keyList : keyLists) {
+                newList.addAll(keyList);
+            }
+
+            resultMap.put(key, newList);
         }
 
         return resultMap;
@@ -796,7 +758,7 @@ public class MAGETabIDFLoader {
 
         String[] stringArray = ontoline.split("\\t");
 
-        ArrayList<String> stringArrayList = new ArrayList<String>(Arrays.asList(stringArray));
+        List<String> stringArrayList = new ArrayList<String>(Arrays.asList(stringArray));
 
         Set<String> set = new LinkedHashSet<String>(stringArrayList);
 

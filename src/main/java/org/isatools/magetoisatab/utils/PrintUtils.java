@@ -7,15 +7,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
-/**
- * Created by IntelliJ IDEA.
- * User: prs
- * Date: 24/02/2012
- * Time: 10:29
- * To change this template use File | Settings | File Templates.
- */
 public class PrintUtils {
 
     public static final Character TAB_DELIM = '\t';
@@ -28,51 +23,25 @@ public class PrintUtils {
     public void printStudySamplesAndAssays(PrintStream ps, Study study, String accnum) {      //, Pair<Integer, Integer> positions
 
         try {
-
-
-
-            String studySampleHeaders = "";
-
-            for (int j=0; j<study.getStudySampleLevelInformation().size(); j++){
-
-                String newSampleRecord ="";
+            for (int j = 0; j < study.getStudySampleLevelInformation().size(); j++) {
+                String newSampleRecord = "";
                 for (String s : study.getStudySampleLevelInformation().get(j)) {
-                    newSampleRecord+=s+"\t";
+                    newSampleRecord += s + "\t";
                 }
+                ps.println(newSampleRecord);
             }
-
-
-                String[] studySampleHeadersAsArray=studySampleHeaders.split(("\t"));
-                Map sampleAndproperties =new HashMap<String,String[]>();
-
-                for (int i=0; i<studySampleHeadersAsArray.length;i++ ) {
-
-                    sampleAndproperties.put(studySampleHeadersAsArray[i],null);
-                }
-
-
-            //writing the data and removing duplicate row as doing so
-            //TODO: retrofit experimental factors if needed
-//            for (int hash : samples.keySet()) {
-//                if (getArrayAsString4Study(samples.get(hash)).length() > 0) {
-//                    ps.println(getArrayAsString4Study(samples.get(hash)));
-//                }
-//            }
-
-
-
 
         } catch (Exception e) {
 
             System.out.println("Caught an IO exception :-o");
             e.printStackTrace();
         }
-
     }
 
 
     /**
      * a method to output Assay Spreadsheet in case there is more than one assay type
+     *
      * @param accnum
      */
     public void printAssay(HashMap<String, List<String[]>> assays, String accnum) {           //String assayType,
@@ -81,23 +50,23 @@ public class PrintUtils {
         //we print the assay file
         try {
 
-             for (String key : assays.keySet()) {
-                 
+            for (String key : assays.keySet()) {
+
                 PrintStream assayPs = new PrintStream(new File(DownloadUtils.CONVERTED_DIRECTORY + File.separator + accnum + "/a_" + accnum + "_" + key + "_assay.txt"));
 
-                 System.out.println("assay type: " + key + ", Value: " + assays.get(key)); 
-                 
-                //writing the data
-                for (String[] assaySection : assays.get(key) ) {
-                    
-                        if (getArrayAsString(assaySection).length() > 0) {
+                System.out.println("assay type: " + key + ", Value: " + assays.get(key));
 
-                         //TODO: insert values in case DT column is mssing to ensure successful validation
-                         if ((isPresentDT = false) && (isPresentDerivedData = true)) {
+                //writing the data
+                for (String[] assaySection : assays.get(key)) {
+
+                    if (getArrayAsString(assaySection).length() > 0) {
+
+                        //TODO: insert values in case DT column is mssing to ensure successful validation
+                        if ((isPresentDT = false) && (isPresentDerivedData = true)) {
 
                             assayPs.println(getArrayAsString(assaySection));
 
-                         }
+                        }
                         //otherwise, output the section as normal
                         else {
                             assayPs.println(getArrayAsString(assaySection));
