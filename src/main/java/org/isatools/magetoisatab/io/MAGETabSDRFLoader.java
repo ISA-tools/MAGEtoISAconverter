@@ -5,9 +5,10 @@ package org.isatools.magetoisatab.io;
 import com.sun.tools.javac.util.Pair;
 import org.isatools.io.FileType;
 import org.isatools.io.Loader;
+import org.isatools.magetoisatab.io.fileprocessing.CollapseColumnUtil;
+import org.isatools.magetoisatab.io.fileprocessing.RemoveDuplicateColumnUtil;
 import org.isatools.magetoisatab.io.model.Assay;
 import org.isatools.magetoisatab.io.model.Study;
-import org.isatools.magetoisatab.utils.CollapseColumnUtil;
 import org.isatools.magetoisatab.utils.Column;
 import org.isatools.magetoisatab.utils.ConversionProperties;
 import org.isatools.magetoisatab.utils.Utils;
@@ -197,7 +198,9 @@ public class MAGETabSDRFLoader {
 
                 //we perform the transformation using the processSpreadsheet method
                 sheetDataSubset = util.processSpreadsheet(sheetDataSubset, PROTOCOL_REF);
-//                sheetDataSubset = util.processSpreadsheet(sheetDataSubset, CHARACTERISTICS);
+
+                RemoveDuplicateColumnUtil removeDuplicateColumnUtil = new RemoveDuplicateColumnUtil();
+                sheetDataSubset = removeDuplicateColumnUtil.processSpreadsheet(sheetDataSubset);
 
                 // you can read each line separately!
 

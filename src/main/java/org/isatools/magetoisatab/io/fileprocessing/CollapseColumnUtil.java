@@ -1,4 +1,4 @@
-package org.isatools.magetoisatab.utils;
+package org.isatools.magetoisatab.io.fileprocessing;
 
 import org.isatools.io.FileType;
 import org.isatools.io.Loader;
@@ -7,9 +7,11 @@ import java.io.IOException;
 import java.util.*;
 
 
-public class CollapseColumnUtil {
+public class CollapseColumnUtil implements FileUtils {
 
     private String lookingFor;
+    
+
 
     private Map<Integer, Integer> selectCandidates(String[] columnNames) {
         Map<Integer, Integer> candidates = new HashMap<Integer, Integer>();
