@@ -3,7 +3,7 @@ package org.isatools.magetoisatab.io.fileprocessing;
 import java.util.*;
 
 
-public class CollapseColumnUtil implements CleanupUtils {
+public class CollapseColumnUtil extends CleanupUtils {
 
     private String lookingFor;
 
@@ -38,6 +38,10 @@ public class CollapseColumnUtil implements CleanupUtils {
         }
 
         return candidates;
+    }
+    
+    public List<String[]> processSpreadsheet(List<String[]> spreadsheet) {
+        return processSpreadsheet(spreadsheet, "Protocol REF");
     }
 
     public List<String[]> processSpreadsheet(List<String[]> spreadsheet, String lookingFor) {

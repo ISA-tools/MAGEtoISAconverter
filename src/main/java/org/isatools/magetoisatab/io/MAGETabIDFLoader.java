@@ -232,7 +232,7 @@ public class MAGETabIDFLoader {
                             line = line.replaceFirst("Experimental Design", "Study Design Type");
                             designLines.set(0, line);
 
-                            for(String designType : designLines) {
+                            for (String designType : designLines) {
                                 ConversionProperties.addDesignType(designType);
                             }
                         }
@@ -244,7 +244,7 @@ public class MAGETabIDFLoader {
 
                             cmtDesignTypes = line.split("\\t");
 
-                            for(String designType : cmtDesignTypes) {
+                            for (String designType : cmtDesignTypes) {
                                 ConversionProperties.addDesignType(designType);
                             }
 
@@ -255,9 +255,11 @@ public class MAGETabIDFLoader {
 
                         } else if (line.startsWith("SDRF File")) {
 
-                            sdrfFileNames = line.split("\\t");
+                            String[] tmpSDRFFileNames = line.split("\\t");
+                            sdrfFileNames = new String[tmpSDRFFileNames.length - 1];
+                            System.arraycopy(tmpSDRFFileNames, 1, sdrfFileNames, 0, tmpSDRFFileNames.length - 1);
 
-                            System.out.println("number of SDRF files: " + (sdrfFileNames.length - 1));
+                            System.out.println("number of SDRF files: " + (sdrfFileNames.length));
 
                             //There is more than one SDRF file listed in this submission, now iterating through them:");
                             for (int sdrfFileIndex = 0; sdrfFileIndex < sdrfFileNames.length; sdrfFileIndex++) {
@@ -267,12 +269,11 @@ public class MAGETabIDFLoader {
                                 System.out.println("SDRF found and downloaded: " + sdrfUrl);
                             }
 
-                            line = line.replaceFirst("SDRF File", "Study Assay File Name");
 
                             if (assaylines == null) {
                                 assaylines = new ArrayList<String>();
                             }
-                            assaylines.add(line);
+                            assaylines.add(line.replaceFirst("SDRF File", "Study Assay File Name"));
                         } else if (line.startsWith("Investigation")) {
                             line = line.replaceFirst("Investigation", "Study");
                             if (investigationLines == null) {
@@ -405,13 +406,13 @@ public class MAGETabIDFLoader {
 
                 invPs.println(measurementTypes);
                 invPs.println("Study Assay Measurement Type Term Accession Number\n" +
-                              "Study Assay Measurement Type Term Source REF");
+                        "Study Assay Measurement Type Term Source REF");
 
 
                 invPs.println(technologyTypes);
                 invPs.println("Study Assay Technology Type Term Accession Number\n" +
-                              "Study Assay Technology Type Term Source REF\n" +
-                              "Study Assay Technology Platform");
+                        "Study Assay Technology Type Term Source REF\n" +
+                        "Study Assay Technology Platform");
 
                 String assayfilenames = "Study Assay File Name";
 
@@ -562,8 +563,8 @@ public class MAGETabIDFLoader {
                     for (Map.Entry<Integer, String> e : isaContactSection.entrySet())
                         invPs.println(e.getValue());
 
-
                     for (String sdrfFile : sdrfFileNames) {
+                        System.out.println("Processing " + sdrfFile);
                         PrintUtils pu = new PrintUtils();
 
                         PrintStream ps = new PrintStream(new File(DownloadUtils.CONVERTED_DIRECTORY + File.separator + accnum + "/s_" + accnum + "_" + "study_samples.txt"));
@@ -571,7 +572,7 @@ public class MAGETabIDFLoader {
                         List<Map<String, List<String>>> studies = new ArrayList<Map<String, List<String>>>();
 
                         //we start at 1 as the first element of the sdrfFilenames array corresponds to the ISA Study File Name tag
-                        for (int counter = 1; counter < sdrfFileNames.length; counter++) {
+                        for (int counter = 0; counter < sdrfFileNames.length; counter++) {
 
                             System.out.println("SDRF number " + counter + " is:" + sdrfDownloadLocation[counter]);
 
@@ -600,7 +601,7 @@ public class MAGETabIDFLoader {
 
                             studies.add(table);
 
-                            pu.printStudySamplesAndAssays(ps, study, accnum);
+                            pu.printStudySamples(ps, study);
 
                             ps.flush();
                             ps.close();
@@ -640,10 +641,7 @@ public class MAGETabIDFLoader {
 
                                 // now obtain the ith element of that associated list
                                 if (sampleRecordIndex < correspondingList.size()) {
-
                                     studyRecord += correspondingList.get(sampleRecordIndex) + "\t";
-                                } else {
-                                    studyRecord += "" + "\t";
                                 }
                             }
 

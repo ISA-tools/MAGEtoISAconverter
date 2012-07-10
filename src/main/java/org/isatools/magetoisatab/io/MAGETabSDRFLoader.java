@@ -5,8 +5,7 @@ package org.isatools.magetoisatab.io;
 import com.sun.tools.javac.util.Pair;
 import org.isatools.io.FileType;
 import org.isatools.io.Loader;
-import org.isatools.magetoisatab.io.fileprocessing.CollapseColumnUtil;
-import org.isatools.magetoisatab.io.fileprocessing.RemoveDuplicateColumnUtil;
+import org.isatools.magetoisatab.io.fileprocessing.CleanupRunner;
 import org.isatools.magetoisatab.io.model.Assay;
 import org.isatools.magetoisatab.io.model.Study;
 import org.isatools.magetoisatab.utils.Column;
@@ -99,7 +98,7 @@ public class MAGETabSDRFLoader {
                 // initialization of the ArrayList which will receive all factor value fields to be kept
                 // this will be used to propagate existing factor value to study sample file
 
-                List<String[]> factorSheetData = new ArrayList<String[]>();
+                List<String[]> factorSheetData;
                 List<Integer> factorPositions2Keep = new ArrayList<Integer>();
                 factorPositions2Keep.add(0);
 
@@ -135,7 +134,6 @@ public class MAGETabSDRFLoader {
                 }
 
                 factorSheetData = SpreadsheetManipulation.getColumnSubset(sheetData, true, convertIntegers(factorPositions2Keep));
-
 
                 sheetData = SpreadsheetManipulation.getColumnSubset(sheetData, true, convertIntegers(positions2keep));
 
@@ -194,23 +192,14 @@ public class MAGETabSDRFLoader {
 
                 // now preparing to process the cleaned SDRF subset and remove all aberrant Protocol REF fields where applicable
                 //we initialize
-                CollapseColumnUtil util = new CollapseColumnUtil();
-
-                //we perform the transformation using the processSpreadsheet method
-                sheetDataSubset = util.processSpreadsheet(sheetDataSubset, PROTOCOL_REF);
-
-                RemoveDuplicateColumnUtil removeDuplicateColumnUtil = new RemoveDuplicateColumnUtil();
-                sheetDataSubset = removeDuplicateColumnUtil.processSpreadsheet(sheetDataSubset);
+                sheetDataSubset = CleanupRunner.cleanupSpreadsheet(sheetDataSubset);
 
                 // you can read each line separately!
-
                 String[] sdrfHeaderRow = sheetDataSubset.get(0);
 
                 Pair<Integer, Integer> sdrfKeyPositions;
 
                 sdrfKeyPositions = processSdrfHeaderRow(sdrfHeaderRow);
-
-                System.out.println("POSITIONS ARE: " + sdrfKeyPositions.fst + " AND " + sdrfKeyPositions.snd);
 
                 Pair<List<String[]>, List<String[]>> studySplitTables = splitSdrfTable(sdrfKeyPositions, sheetDataSubset, factorSheetData);
 
@@ -227,20 +216,22 @@ public class MAGETabSDRFLoader {
 
                         PrintStream assayPs = new PrintStream(new File(DownloadUtils.CONVERTED_DIRECTORY + File.separator + accnum + "/a_" + accnum + "_" + key + "_assay.txt"));
 
-                        for (String[] records : anAssaysFromThisSDRF.getAssayLevelInformation().get(key)) {
+                        // remove duplicate columns, expanded protocol refs and rogue term source/accession columns
+                        List<String[]> assaySheet = CleanupRunner.cleanupSpreadsheet(
+                                anAssaysFromThisSDRF.getAssayLevelInformation().get(key));
 
+                        for (String[] records : assaySheet) {
                             String newAssayRecord = "";
-
+                            int count = 0;
                             for (String s : records) {
-                                newAssayRecord += s + "\t";
+                                newAssayRecord += s + (count != records.length - 1 ? "\t" : "");
+                                count++;
                             }
                             assayPs.println(newAssayRecord);
-
                         }
                     }
                 }
             } else {
-
                 System.out.println("SDRF Processing: ERROR: file not found!");
             }
         } catch (FileNotFoundException e) {
@@ -364,7 +355,6 @@ public class MAGETabSDRFLoader {
                     if (!getArrayAsString(columnNames).contains("Hybridization Name")) {
                         firstNodePosition = 0;
                         // todo set variables
-                        //break;
                     } else {
                         for (int i = 0; i < headerRow.length; i++) {
 
@@ -767,7 +757,6 @@ public class MAGETabSDRFLoader {
             }
         }
 
-        System.out.println("Assay type size " + aTypeUnique.size());
         for (String assaytype : aTypeUnique) {
             if (assaytype.contains("Hybridization")) {
                 Map<String, List<String[]>> theOne = new HashMap<String, List<String[]>>();

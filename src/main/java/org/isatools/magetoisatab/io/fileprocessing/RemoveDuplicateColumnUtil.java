@@ -12,7 +12,7 @@ import java.util.*;
  *         Date: 09/07/2012
  *         Time: 14:43
  */
-public class RemoveDuplicateColumnUtil implements CleanupUtils {
+public class RemoveDuplicateColumnUtil extends CleanupUtils {
 
     private Map<String, String[]> mergedColumnValues;
 
@@ -24,10 +24,14 @@ public class RemoveDuplicateColumnUtil implements CleanupUtils {
         String[] columnNames = spreadsheet.get(0);
 
         Map<String, Set<Integer>> duplicateColumns = getDuplicateColumns(columnNames);
+        System.out.println("Number of duplicate columns: " + duplicateColumns.size());
+
+        if (duplicateColumns.size() == 0) {
+            return spreadsheet;
+
+        }
+        // otherwise continue on.
         createMergedDuplicateColumnRepresentation(spreadsheet, duplicateColumns);
-
-        System.out.println("processSpreadsheet()..");
-
         // now we try remove duplicates and move their content to the same index in one column.
         int[] indicesToInclude = getIndicesToIncludeAndMergeValuesInDuplicateColumns(columnNames, spreadsheet, duplicateColumns);
 
@@ -36,20 +40,22 @@ public class RemoveDuplicateColumnUtil implements CleanupUtils {
 
     private void createMergedDuplicateColumnRepresentation(List<String[]> spreadsheet, Map<String, Set<Integer>> duplicateColumns) {
         for (String columnName : duplicateColumns.keySet()) {
-            // -1 because the 0th row is the column headers
-            String[] values = new String[spreadsheet.size()];
+
+
+            String[] newColumnValues = new String[spreadsheet.size()];
 
             boolean overlapping = false;
             for (int rowIndex = 0; rowIndex < spreadsheet.size() && !overlapping; rowIndex++) {
 
                 for (int columnIndex : duplicateColumns.get(columnName)) {
 
-                    if(values[rowIndex] == null) {
-                        values[rowIndex] = spreadsheet.get(rowIndex)[columnIndex];
+                    if (newColumnValues[rowIndex] == null || newColumnValues[rowIndex].isEmpty()) {
+                        newColumnValues[rowIndex] = spreadsheet.get(rowIndex)[columnIndex];
                     }
                 }
             }
-            mergedColumnValues.put(columnName, values);
+
+            mergedColumnValues.put(columnName, newColumnValues);
         }
     }
 
@@ -77,19 +83,12 @@ public class RemoveDuplicateColumnUtil implements CleanupUtils {
             }
         }
 
-        int[] indices = new int[indicesToKeep.size()];
-        int count = 0;
-        for (Integer index : indicesToKeep) {
-            indices[count] = index;
-            count++;
-        }
-
-        return indices;
+        return convertListOfClassesToArrayOfPrimitives(indicesToKeep);
     }
 
     private List<String[]> mergeDuplicates(List<String[]> spreadsheet, String columnName, int indexToKeep) {
 
-        for (int rowIndex = 1; rowIndex < spreadsheet.size(); rowIndex++) {
+        for (int rowIndex = 0; rowIndex < spreadsheet.size(); rowIndex++) {
             String newValue = mergedColumnValues.get(columnName)[rowIndex];
             spreadsheet.get(rowIndex)[indexToKeep] = newValue == null ? "" : newValue;
         }
@@ -116,10 +115,6 @@ public class RemoveDuplicateColumnUtil implements CleanupUtils {
             columnNamesToIndexes.remove(columnToRemove);
         }
         return columnNamesToIndexes;
-    }
-
-    private boolean isColumnNameOk(String columnName) {
-        return (columnName.contains("Characteristics") || columnName.contains("Factor") || columnName.contains("Comment"));
     }
 
     private Map<String, Set<Integer>> getColumnNameAndIndexes(String[] columnNames) {

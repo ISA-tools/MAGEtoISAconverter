@@ -57,7 +57,6 @@ public class MAGETabObtain {
 
                 idfUrl = "http://www.ebi.ac.uk/arrayexpress/files/" + accessionNumber + "/" + accessionNumber + ".idf.txt";
 
-
                 DownloadUtils.createDirectory(DownloadUtils.TMP_DIRECTORY + File.separator + accessionNumber);
 
                 String idfDownloadLocation = DownloadUtils.TMP_DIRECTORY + File.separator + accessionNumber + File.separator + accessionNumber + ".idf.txt";
