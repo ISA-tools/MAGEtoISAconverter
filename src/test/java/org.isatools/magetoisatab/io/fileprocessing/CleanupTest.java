@@ -25,7 +25,7 @@ public class CleanupTest {
         try {
             CSVReader reader = new CSVReader(new FileReader(new File("Data/E-GEOD-16013/a_E-GEOD-16013_ChIP-Seq_assay.txt")));
             List<String[]> sheet = reader.readAll();
-            sheet = CleanupRunner.cleanupSpreadsheet(sheet);
+            sheet = CleanupRunner.cleanupSpreadsheet(sheet, false);
 
             System.out.println(sheet.size());
         } catch (FileNotFoundException fnfe) {

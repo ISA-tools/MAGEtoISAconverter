@@ -12,7 +12,7 @@ import java.util.List;
  */
 public class CleanupRunner {
 
-    public static List<String[]> cleanupSpreadsheet(List<String[]> spreadsheet) {
+    public static List<String[]> cleanupSpreadsheet(List<String[]> spreadsheet, boolean skipCollapse) {
 
         CleanupUtils collapseColumnUtil = new CollapseColumnUtil();
         CleanupUtils removeDuplicateColumnUtil = new RemoveDuplicateColumnUtil();
@@ -24,8 +24,10 @@ public class CleanupRunner {
         System.out.println("Ran remove duplicate util");
 
 
-//        spreadsheet = collapseColumnUtil.processSpreadsheet(spreadsheet);
-        System.out.println("Ran collapse column util");
+        if (!skipCollapse) {
+            spreadsheet = collapseColumnUtil.processSpreadsheet(spreadsheet);
+            System.out.println("Ran collapse column util");
+        }
 
         spreadsheet = removeRogueColumnUtil.processSpreadsheet(spreadsheet);
         System.out.println("Ran remove rogue column util");

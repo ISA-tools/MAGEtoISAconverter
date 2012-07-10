@@ -40,8 +40,6 @@ public class RemoveDuplicateColumnUtil extends CleanupUtils {
 
     private void createMergedDuplicateColumnRepresentation(List<String[]> spreadsheet, Map<String, Set<Integer>> duplicateColumns) {
         for (String columnName : duplicateColumns.keySet()) {
-
-
             String[] newColumnValues = new String[spreadsheet.size()];
 
             boolean overlapping = false;
@@ -82,7 +80,6 @@ public class RemoveDuplicateColumnUtil extends CleanupUtils {
                 }
             }
         }
-
         return convertListOfClassesToArrayOfPrimitives(indicesToKeep);
     }
 
@@ -92,7 +89,6 @@ public class RemoveDuplicateColumnUtil extends CleanupUtils {
             String newValue = mergedColumnValues.get(columnName)[rowIndex];
             spreadsheet.get(rowIndex)[indexToKeep] = newValue == null ? "" : newValue;
         }
-
         return spreadsheet;
     }
 

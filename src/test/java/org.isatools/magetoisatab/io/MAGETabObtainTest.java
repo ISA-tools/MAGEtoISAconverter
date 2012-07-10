@@ -18,7 +18,7 @@ public class MAGETabObtainTest {
         System.out.println("___Testing MAGE-Tab Obtain");
         MAGETabObtain converter = new MAGETabObtain();
         try {
-            File isatabDir = converter.doConversion("E-GEOD-26565");
+            File isatabDir = converter.doConversion("E-GEOD-16013");
 
             String baseDir = System.getProperty("basedir");
             ISAConfigurationSet.setConfigPath(baseDir + "/target/test-classes/default-configuration/isaconfig-default_v2011-02-18");

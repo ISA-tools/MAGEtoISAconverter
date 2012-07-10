@@ -7,7 +7,11 @@ public class CollapseColumnUtil extends CleanupUtils {
 
     private String lookingFor;
 
-
+    /**
+     * Selects candidates for collapse and returns a Map of start indexes to the length of the pattern
+     * @param columnNames - String[] of column names
+     * @return - Map<start_index_of_pattern, length_of_pattern>
+     */
     private Map<Integer, Integer> selectCandidates(String[] columnNames) {
         Map<Integer, Integer> candidates = new HashMap<Integer, Integer>();
 
@@ -51,8 +55,7 @@ public class CollapseColumnUtil extends CleanupUtils {
 
         Map<Integer, Integer> candidates = selectCandidates(columnNames);
 
-        Map<Integer, Map<Integer, Set<String>>> rowToProtocolValues
-                = new HashMap<Integer, Map<Integer, Set<String>>>();
+        Map<Integer, Map<Integer, Set<String>>> rowToProtocolValues = new HashMap<Integer, Map<Integer, Set<String>>>();
 
         // at this point we now have the cases where there are multiple chained Protocol REFs
         for (int rowNumber = 1; rowNumber < spreadsheet.size(); rowNumber++) {
@@ -121,7 +124,7 @@ public class CollapseColumnUtil extends CleanupUtils {
         values.addAll(protocolBlocks.keySet());
         Collections.sort(values);
 
-        for (int startIndex = values.size() - 1; startIndex >= 0; startIndex--) {
+        for (int startIndex = values.size()-1; startIndex >= 0; startIndex--) {
             int rowCount = 0;
 
             if (protocolBlocks.get(values.get(startIndex)) != null) {

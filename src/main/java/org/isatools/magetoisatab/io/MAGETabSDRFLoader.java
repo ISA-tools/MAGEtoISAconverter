@@ -192,7 +192,7 @@ public class MAGETabSDRFLoader {
 
                 // now preparing to process the cleaned SDRF subset and remove all aberrant Protocol REF fields where applicable
                 //we initialize
-                sheetDataSubset = CleanupRunner.cleanupSpreadsheet(sheetDataSubset);
+                sheetDataSubset = CleanupRunner.cleanupSpreadsheet(sheetDataSubset, false);
 
                 // you can read each line separately!
                 String[] sdrfHeaderRow = sheetDataSubset.get(0);
@@ -218,7 +218,7 @@ public class MAGETabSDRFLoader {
 
                         // remove duplicate columns, expanded protocol refs and rogue term source/accession columns
                         List<String[]> assaySheet = CleanupRunner.cleanupSpreadsheet(
-                                anAssaysFromThisSDRF.getAssayLevelInformation().get(key));
+                                anAssaysFromThisSDRF.getAssayLevelInformation().get(key), true);
 
                         for (String[] records : assaySheet) {
                             String newAssayRecord = "";
