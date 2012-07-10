@@ -35,13 +35,7 @@ public class MAGETabIDFLoader {
 
     private static final Logger log = Logger.getLogger(MAGETabIDFLoader.class.getName());
 
-    public static final Character TAB_DELIM = '\t';
-
     public String[] sdrfFileNames;
-
-    public String[] aeExpTypes;
-
-    public String[] cmtDesignTypes;
 
 
     public List<String> investigationLines;
@@ -242,9 +236,9 @@ public class MAGETabIDFLoader {
 
                             System.out.println("Alternative Design Tag found at: " + line);
 
-                            cmtDesignTypes = line.split("\\t");
+                            String[] designTypes = line.split("\\t");
 
-                            for (String designType : cmtDesignTypes) {
+                            for (String designType : designTypes) {
                                 ConversionProperties.addDesignType(designType);
                             }
 
@@ -432,30 +426,26 @@ public class MAGETabIDFLoader {
                 }
 
                 //case2: there are more than 1 SDRF and we rely on the information found under Comment[AEexperimentTypes]
-                else if ((sdrfFileNames.length > 0) && (sdrfFileNames.length == cmtDesignTypes.length)) {
+                else if ((sdrfFileNames.length > 0) && (sdrfFileNames.length == ConversionProperties.getDesignTypes().size())) {
 
-                    for (int studyDesign = 0; studyDesign < cmtDesignTypes.length; studyDesign++) { //we start at 1 as the first element of the array is the header "
+                    for (String cmtDesignType : ConversionProperties.getDesignTypes()) { //we start at 1 as the first element of the array is the header "
 
-                        if (cmtDesignTypes[studyDesign].toLowerCase().contains("chip-seq")) {
+                        if (ConversionProperties.isValueInDesignTypes("chip-seq")) {
 
                             for (AssayType anAssayTTMT : assayTTMT) {
                                 if ((anAssayTTMT.getMeasurement().equalsIgnoreCase("protein-DNA binding site identification")) &&
                                         (anAssayTTMT.getTechnology().equalsIgnoreCase("nucleotide sequencing"))) {
-                                    cmtDesignTypes[studyDesign] = cmtDesignTypes[studyDesign].replaceAll("\\?iChIP-seq", "ChIP-Seq");
-                                    anAssayTTMT.setFile(cmtDesignTypes[studyDesign]);
+                                    anAssayTTMT.setFile(cmtDesignType.replaceAll("\\?iChIP-seq", "ChIP-Seq"));
                                 }
                             }
                         }
 
-                        if (cmtDesignTypes[studyDesign].toLowerCase().contains("transcription profiling by array")) {
+                        if (ConversionProperties.isValueInDesignTypes("transcription profiling by array")) {
                             for (AssayType anAssayTTMT : assayTTMT) {
 
                                 if ((anAssayTTMT.getMeasurement().equalsIgnoreCase("transcription profiling")) &&
                                         (anAssayTTMT.getTechnology().equalsIgnoreCase("DNA microarray"))) {
-
-                                    // System.out.println("design-after-1st: "+cmtDesignTypes[studyDesign]);
-                                    cmtDesignTypes[studyDesign] = cmtDesignTypes[studyDesign].replaceAll("transcription profiling by array", "GeneChip");
-                                    anAssayTTMT.setFile(cmtDesignTypes[studyDesign]);
+                                    anAssayTTMT.setFile(cmtDesignType.replaceAll("transcription profiling by array", "GeneChip"));
                                 }
                             }
                         }
@@ -790,7 +780,7 @@ public class MAGETabIDFLoader {
             assayTypes.add(new AssayType("transcription profiling", "nucleotide sequencing", "RNA-Seq"));
         }
 
-        if (line.matches(".*transcription profiling by array.*")) {
+        if (line.matches(".*transcription profiling by array.*") || line.matches("dye_swap_design")) {
             assayTypes.add(new AssayType("transcription profiling", "DNA microarray", "GeneChip"));
         }
         if (line.matches("(?i).*methylation profiling by array.*")) {
