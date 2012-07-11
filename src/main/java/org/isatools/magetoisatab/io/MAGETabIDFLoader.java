@@ -385,18 +385,42 @@ public class MAGETabIDFLoader {
                 //Now creating the Assay Section:
                 invPs.println("STUDY ASSAYS");
 
+
+
+
+
+
                 // We are now trying to get the Measurement and Technology Type from MAGE annotation Experimental Design Type
 
-                List<AssayType> assayTTMT = getMeasurementAndTech(designLines.get(0));
+                List<AssayType>   assayTTMT = getMeasurementAndTech(designLines.get(0));
+
+                //trying to recover information about assay type in the absence of information in  Comment[AE..] and StudyDesign fields
+                for (String investigationLine : investigationLines) {
+
+                    if (investigationLine.contains("Study Title\tTranscription prof") || investigationLine.contains("Study Title\tGene expression prof")
+                            || investigationLine.contains("Study Title\ttranscription prof") || investigationLine.contains("Study Title\tgene expression prof")) {
+
+                        System.out.println("BYE investigationLine = " + investigationLine);
+                        //NOTE: we take a risk here by assuming that in the absence of information  in  Comment[AE..] and StudyDesign fields, finding 'Gene expression profiling or Transcription profiling in the title
+                        // means it always uses microarrays.
+                        assayTTMT.add(new AssayType("transcription profiling", "DNA microarray", "GeneChip"));
+                    }
+                }
 
                 // If this fails, we are falling back on checking MAGE-TAB Comment[AEExperimentType] line
                 String measurementTypes = "Study Assay Measurement Type";
                 String technologyTypes = "Study Assay Technology Type";
 
+
                 for (AssayType anAssayTTMT1 : assayTTMT) {
-                    measurementTypes = measurementTypes + "\t" + anAssayTTMT1.getMeasurement();
-                    technologyTypes = technologyTypes + "\t" + anAssayTTMT1.getTechnology();
+                    //testing if it contains something meaningful!
+                    if ((anAssayTTMT1.getMeasurement() != "") || (anAssayTTMT1.getMeasurement()!=null) || (anAssayTTMT1.getTechnology() !="" )|| (anAssayTTMT1.getTechnology()!=null))  {
+                        measurementTypes = measurementTypes + "\t" + anAssayTTMT1.getMeasurement();
+                        technologyTypes = technologyTypes + "\t" + anAssayTTMT1.getTechnology();
+                    }
+
                 }
+
 
                 invPs.println(measurementTypes);
                 invPs.println("Study Assay Measurement Type Term Accession Number\n" +
@@ -701,6 +725,7 @@ public class MAGETabIDFLoader {
 
 
         for (String investigationLine : investigationLines) {
+
             invPs.println(investigationLine);
         }
     }

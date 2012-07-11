@@ -35,6 +35,8 @@ public class MAGETabSDRFLoader {
     private int platform = -1;   //a flag to detect the presence of Comment[platform] Field in MAGE-TAB
 
     private boolean isPresentDT = false;
+    private boolean isPresentNrm = false;
+
 
     public Map<Integer, String[]> samples;
     public Set<String[]> assaysFromGivenSDRF;
@@ -107,10 +109,10 @@ public class MAGETabSDRFLoader {
                         platform++;
                     }
 
-                    if (columnNames[columnIndex].startsWith("Factor Value")) {
+                    if (columnNames[columnIndex].startsWith("Factor Value") || columnNames[columnIndex].startsWith("factor value")) {
 
                         columnNames[columnIndex] = columnNames[columnIndex].toLowerCase();
-                        columnNames[columnIndex] = columnNames[columnIndex].replaceAll("factor value ", "Factor Value");
+                        columnNames[columnIndex] = columnNames[columnIndex].replaceAll("factor value", "Factor Value");
 
                         System.out.println("There is a factor value at position: " + columnIndex);
                         factorPositions2Keep.add(columnIndex);
@@ -316,8 +318,10 @@ public class MAGETabSDRFLoader {
         if (getArrayAsString(columnNames).contains("Assay Name")) {
             presentHyb = true;
         }
+
+
         if (getArrayAsString(columnNames).contains("Normalization Name")) {
-            boolean presentNorm = true;
+            isPresentNrm = true;
         }
         if (getArrayAsString(columnNames).contains("Data Transformation Name")) {
             isPresentDT = true;
@@ -415,7 +419,9 @@ public class MAGETabSDRFLoader {
 
         Integer secondIndexNodeDepth = indices.snd;
 
-        int dataTransNameIndex;
+        int dataNormIndex = 0;
+        int dataTransNameIndex = 0;
+
 
         //This test catches malformed MAGE-TAB files (i.e MAGE-TAB files starting with things other than Source Name)
         if (firstIndexNodePosition > 0) {
@@ -482,18 +488,36 @@ public class MAGETabSDRFLoader {
                         studyAssayHeaders += "Derived Data File" + "\t";
                     }
                     //
-                    else if (!isPresentDT && ((columnNames[columnIndex].equals("Derived Array Data Matrix File")))) {
+
+                    else if (!isPresentNrm && ((columnNames[columnIndex].equals("Derived Array Data File")))) {
+                        dataNormIndex = columnIndex;
+                        studyAssayHeaders += "Normalization Name\tDerived Array Data File" + "\t";
+                    } else if (!isPresentDT && ((columnNames[columnIndex].equals("Derived Array Data Matrix File")))) {
                         dataTransNameIndex = columnIndex;
-                        studyAssayHeaders += "Data Transformation Name\tDerived Data File" + "\t";
+                        studyAssayHeaders += "Data Transformation Name\tDerived Array Data Matrix File" + "\t";
                     } else if (columnNames[columnIndex].startsWith("FactorValue ")) {
                         columnNames[columnIndex] = columnNames[columnIndex].toLowerCase();
                         columnNames[columnIndex] = columnNames[columnIndex].replaceAll("factorvalue ", "Factor Value");
                         studyAssayHeaders += columnNames[columnIndex] + "\t";
-                    } else if (columnNames[columnIndex].startsWith("Factor Value ")) {
+
+                    } else if (columnNames[columnIndex].startsWith("factorvalue ")) {
                         columnNames[columnIndex] = columnNames[columnIndex].toLowerCase();
-                        columnNames[columnIndex] = columnNames[columnIndex].replaceAll("factor value ", "Factor Value");
+                        columnNames[columnIndex] = columnNames[columnIndex].replaceAll("factorvalue ", "Factor Value");
                         studyAssayHeaders += columnNames[columnIndex] + "\t";
-                    } else {
+
+                    } else if (columnNames[columnIndex].startsWith("Factor Value ") || columnNames[columnIndex].startsWith("factor value ") || columnNames[columnIndex].startsWith("factor value")) {
+                        columnNames[columnIndex] = columnNames[columnIndex].toLowerCase();
+                        columnNames[columnIndex] = columnNames[columnIndex].replaceAll("factor value ", "Factor Value").replace("factor value", "Factor Value");
+                        studyAssayHeaders += columnNames[columnIndex] + "\t";
+
+
+                    }
+//                  else if (columnNames[columnIndex].startsWith("Factor Value ")|| columnNames[columnIndex].startsWith("factorvalue ")) {
+//                        columnNames[columnIndex] = columnNames[columnIndex].toLowerCase();
+//                        columnNames[columnIndex] = columnNames[columnIndex].replaceAll("factor value ", "Factor Value");
+//                        studyAssayHeaders += columnNames[columnIndex] + "\t";
+//                    }
+                    else {
                         studyAssayHeaders += columnNames[columnIndex] + "\t";
                     }
                 }
@@ -543,7 +567,8 @@ public class MAGETabSDRFLoader {
                         }
                     }
 
-                    sdrfAssayTable.add(assayRecord);
+                    insertMissingColumns(sdrfAssayTable, firstIndexNodePosition, dataNormIndex, dataTransNameIndex, assayRecord);
+
 
                 }
 
@@ -571,8 +596,16 @@ public class MAGETabSDRFLoader {
                         }
                     }
 
-                    sdrfAssayTable.add(assayRecord);
-
+                    if (dataNormIndex == 0 && dataTransNameIndex == 0) {
+                        sdrfAssayTable.add(assayRecord);
+                    } else if (dataNormIndex > 0 && dataTransNameIndex == 0) {
+                        insertColumn(sdrfAssayTable, firstIndexNodePosition, assayRecord, dataNormIndex - firstIndexNodePosition);
+                    } else if (dataNormIndex == 0 && dataTransNameIndex > 0) {
+                        insertColumn(sdrfAssayTable, firstIndexNodePosition, assayRecord, dataTransNameIndex - firstIndexNodePosition);
+                    } else if (dataNormIndex > 0 && dataTransNameIndex > 0) {
+                        insertColumn(sdrfAssayTable, firstIndexNodePosition, assayRecord, dataNormIndex - firstIndexNodePosition,
+                                dataTransNameIndex - firstIndexNodePosition);
+                    }
                 }
 
                 sdrfStudySampleTable.add(sampleRecord);
@@ -597,7 +630,9 @@ public class MAGETabSDRFLoader {
                         }
                     }
 
-                    sdrfAssayTable.add(assayRecord);
+                    insertMissingColumns(sdrfAssayTable, firstIndexNodePosition, dataNormIndex, dataTransNameIndex, assayRecord);
+
+
                 }
 
                 sdrfStudySampleTable.add(sampleRecord);
@@ -622,15 +657,12 @@ public class MAGETabSDRFLoader {
                         }
                     }
 
-                    sdrfAssayTable.add(assayRecord);
+                    //need to check if field insertion is needed by testing if data   dataTransNameIndex and dataNormIndex are >0
+                    insertMissingColumns(sdrfAssayTable, firstIndexNodePosition, dataNormIndex, dataTransNameIndex, assayRecord);
                 }
-
                 sdrfStudySampleTable.add(sampleRecord);
             }
-
-
         }
-
 
         // THIS CODE SECTION IS MEANT TO RETROFIT ANY FACTOR VALUES TO THE STUDY SAMPLE SPREADSHEET
         // The underlying assumption is that the factors are the same, even in the case of multiple SDRF
@@ -655,6 +687,29 @@ public class MAGETabSDRFLoader {
             }
         }
         return new Pair<List<String[]>, List<String[]>>(sdrfStudySampleTableFactors, sdrfAssayTable);
+    }
+
+    private void insertMissingColumns(List<String[]> sdrfAssayTable, Integer firstIndexNodePosition, int dataNormIndex, int dataTransNameIndex, String[] assayRecord) {
+        if (dataNormIndex == 0 && dataTransNameIndex == 0) {
+            sdrfAssayTable.add(assayRecord);
+        } else if (dataNormIndex > 0 && dataTransNameIndex == 0) {
+            insertColumn(sdrfAssayTable, firstIndexNodePosition, assayRecord, dataNormIndex);
+        } else if (dataNormIndex == 0 && dataTransNameIndex > 0) {
+            insertColumn(sdrfAssayTable, firstIndexNodePosition, assayRecord, dataTransNameIndex);
+        } else if (dataNormIndex > 0 && dataTransNameIndex > 0) {
+            insertColumn(sdrfAssayTable, firstIndexNodePosition, assayRecord, dataNormIndex, dataTransNameIndex);
+        }
+    }
+
+    private void insertColumn(List<String[]> sdrfAssayTable, Integer firstIndexNodePosition, String[] assayRecord, int... indexToInsertAt) {
+        List<String> alistValues = new ArrayList<String>(Arrays.asList(assayRecord));
+        for (int indexToInsert : indexToInsertAt) {
+            alistValues.add(indexToInsert, "");
+        }
+        String[] newAssayRecord;
+
+        newAssayRecord = alistValues.toArray(new String[alistValues.size()]);
+        sdrfAssayTable.add(newAssayRecord);
     }
 
     /*
@@ -706,7 +761,7 @@ public class MAGETabSDRFLoader {
                 rnaSeqRecords.add(thisAssayRecord);
             }
 
-            if(ConversionProperties.isValueInDesignTypes("dye_swap_design")) {
+            if (ConversionProperties.isValueInDesignTypes("dye_swap_design")) {
                 aTypeUnique.add("transcription profiling by array");
                 genechipRecords.add(thisAssayRecord);
             }
@@ -779,5 +834,4 @@ public class MAGETabSDRFLoader {
         return new ArrayList<Assay>(assaysFromGivenSDRF);
 
     }
-
 }
