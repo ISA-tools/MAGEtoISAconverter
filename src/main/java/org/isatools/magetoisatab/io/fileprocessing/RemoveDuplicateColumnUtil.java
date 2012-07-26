@@ -28,7 +28,6 @@ public class RemoveDuplicateColumnUtil extends CleanupUtils {
 
         if (duplicateColumns.size() == 0) {
             return spreadsheet;
-
         }
         // otherwise continue on.
         createMergedDuplicateColumnRepresentation(spreadsheet, duplicateColumns);

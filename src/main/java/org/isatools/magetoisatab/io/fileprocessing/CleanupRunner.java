@@ -17,20 +17,23 @@ public class CleanupRunner {
         CleanupUtils collapseColumnUtil = new CollapseColumnUtil();
         CleanupUtils removeDuplicateColumnUtil = new RemoveDuplicateColumnUtil();
         CleanupUtils removeRogueColumnUtil = new RogueColumnRemovalUtil();
+        CleanupUtils protocolInsertionUtil = new ProtocolInsertionUtil();
 
         //we perform the transformation using the processSpreadsheet method
 
         spreadsheet = removeDuplicateColumnUtil.processSpreadsheet(spreadsheet);
-        System.out.println("Ran remove duplicate util");
-
+        System.out.println("Ran remove duplicate util.");
 
         if (!skipCollapse) {
             spreadsheet = collapseColumnUtil.processSpreadsheet(spreadsheet);
-            System.out.println("Ran collapse column util");
+            System.out.println("Ran collapse column util.");
         }
 
         spreadsheet = removeRogueColumnUtil.processSpreadsheet(spreadsheet);
-        System.out.println("Ran remove rogue column util");
+        System.out.println("Ran remove rogue column util.");
+
+        spreadsheet = protocolInsertionUtil.processSpreadsheet(spreadsheet);
+        System.out.println("Ran protocol insertion util.");
 
         return spreadsheet;
     }
