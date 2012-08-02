@@ -1,6 +1,9 @@
 package org.isatools.magetoisatab.io.fileprocessing;
 
+import org.isatools.manipulator.SpreadsheetManipulation;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -18,15 +21,15 @@ public class ProtocolInsertionUtil extends CleanupUtils {
         List<WrongLocations> wrongLocationsList = processColumnHeaders(columnHeaders);
 
         System.out.println(wrongLocationsList.size());
+        Collections.sort(wrongLocationsList);
 
         for (WrongLocations wrongLocations : wrongLocationsList) {
             String inferredType = inferProtocolType(wrongLocations, columnHeaders);
-            if(inferredType != null) {
-                System.out.println(columnHeaders[wrongLocations.firstNode] + " to " + columnHeaders[wrongLocations.lastNode] + " : type should be " + inferredType);
-            }
+            inferredType = (inferredType == null) ? "" : inferredType;
+            spreadsheet = SpreadsheetManipulation.insertColumn(spreadsheet, "Protocol REF", wrongLocations.getParameterValueLocation(), inferredType);
         }
 
-        return null;
+        return spreadsheet;
     }
 
     private List<WrongLocations> processColumnHeaders(String[] columnNames) {
@@ -65,7 +68,7 @@ public class ProtocolInsertionUtil extends CleanupUtils {
             // checking if isn't a lone protocol value
             if (isOtherProtocolRelatedColumn(columnName)) {
                 // check if we've seen a protocol ref before this...
-                if (lastProtocolREFIndex == -1) {
+                if (lastProtocolREFIndex == -1 && currentWrongLocation == null) {
                     // we have a rogue column
                     currentWrongLocation = new WrongLocations(currentIndex, lastNodeIndex);
                 }
@@ -83,22 +86,22 @@ public class ProtocolInsertionUtil extends CleanupUtils {
     private boolean isOtherProtocolRelatedColumn(String columnName) {
         return columnName.equals("Performer") || columnName.equals("Date") || columnName.contains("Parameter Value");
     }
-    
+
     private String inferProtocolType(WrongLocations wrongLocations, String[] columnHeaders) {
-        
+
         String firstNode = columnHeaders[wrongLocations.firstNode];
         String lastNode = columnHeaders[wrongLocations.lastNode];
-        
+
         InferredProtocolTypes inferredType = InferredProtocolTypes.selectTypeGivenNodes(firstNode, lastNode);
-        if(inferredType != null) {
-            return inferredType.getType();    
+        if (inferredType != null) {
+            return inferredType.getType();
         }
-        
+
         return null;
     }
 
 
-    class WrongLocations {
+    class WrongLocations implements Comparable<WrongLocations> {
 
         int parameterValueLocation;
         int firstNode, lastNode;
@@ -122,6 +125,12 @@ public class ProtocolInsertionUtil extends CleanupUtils {
 
         public int getLastNode() {
             return lastNode;
+        }
+
+        public int compareTo(WrongLocations wrongLocations) {
+            return wrongLocations.getParameterValueLocation() < parameterValueLocation ?
+                    -1 : wrongLocations.getParameterValueLocation() == parameterValueLocation
+                    ? 0 : 1;
         }
     }
 

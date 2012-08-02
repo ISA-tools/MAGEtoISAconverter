@@ -19,6 +19,8 @@ public class DownloadUtils {
         OutputStream os = null;
         InputStream is = null;
 
+        System.out.println("Downloading to " + TMP_DIRECTORY);
+
         try {
             url = new URL(fileLocation);
 

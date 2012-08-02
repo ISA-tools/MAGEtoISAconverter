@@ -1,62 +1,65 @@
 package org.isatools.magetoisatab.io.fileprocessing;
-/**
- * Created by IntelliJ IDEA.
- * User: prs
- * Date: 24/07/2012
- * Time: 00:48
- * To change this template use File | Settings | File Templates.
- */
-//public class ColumnMoveUtil extends CleanupUtils {
-//    static Set<String> columnsToLookFor;
-//
-//    static {
-//        columnsToLookFor = new HashSet<String>();
-//
-//        columnsToLookFor.add("Parameter Value[run identifier]");
-//        //columnsToLookFor.add("Parameter Value[sequencing instrument]");
-//       // columnsToLookFor.add("Assay Name");
-//    }
 
-//    public List<String[]> processSpreadsheet(List<String[]> spreadsheet) {
-//        try {
-//            String[] columnHeaders = spreadsheet.get(0);
-//          //  int[] indicesToKeep = locateAndMoveColumns(columnHeaders);
-//
-//            System.out.println("Column header size is:" + columnHeaders.length);
-//            System.out.println("Indices to keep is: " + indicesToKeep.length);
-//            if(indicesToKeep.length == columnHeaders.length) {
-//                return spreadsheet;
-//            }
-//            return SpreadsheetManipulation.getColumnSubset(spreadsheet, true, indicesToKeep);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            return spreadsheet;
-//        }
-//    }
+import org.isatools.manipulator.SpreadsheetManipulation;
 
-//    public int[] locateAndMoveColumns(String[] columnHeaders) {
-//        List<Integer> indexesToMove = new ArrayList<Integer>();
-//
-//        for (int columnIndex = 0; columnIndex < columnHeaders.length; columnIndex++) {
-//            if (columnIndex != 0) {
-//                // check if last column is one which should have term source and accession
-//                if (columnsToLookFor.contains(columnHeaders[columnIndex])) {
-//                    // we want to check for column 1 or two back in the case of the source ref and accession columns.
-//                    if (isColumnName4PVOk(columnHeaders[columnIndex - 1])) {
-//                        indexesToMove.add(columnIndex);
-//                    }
-//                    } else {
-//                        System.out.println(columnIndex + " should be removed!");
-//                    }
-//                } else {
-//                    indexesToKeep.add(columnIndex);
-//                }
-//            } else {
-//                indexesToKeep.add(columnIndex);
-//            }
-//        }
-//
-//        return convertListOfClassesToArrayOfPrimitives(indexesToKeep);
-//    }
-//    }
-//}
+import java.util.ArrayList;
+import java.util.List;
+
+public class ColumnMoveUtil extends CleanupUtils {
+
+    @Override
+    public List<String[]> processSpreadsheet(List<String[]> spreadsheet) {
+        // look for certain columns, namely Parameter Value[run identifier]
+        for (ColumnMovementParameters movementParameters : ColumnMovementParameters.values()) {
+            int toMoveIndex = -1;
+            int indexToMoveTo = -1;
+            String[] columnHeaders = SpreadsheetManipulation.getColumnHeaders(spreadsheet);
+            int columnIndex = 0;
+            for (String columnHeader : columnHeaders) {
+                if (columnHeader.equals(movementParameters.getColumnName())) {
+                    toMoveIndex = columnIndex;
+                }
+                if (columnHeader.equals(movementParameters.getColumnNameToMoveBeside())) {
+                    indexToMoveTo = columnIndex;
+                    break;
+                }
+                columnIndex++;
+            }
+
+            if (toMoveIndex != -1 && indexToMoveTo != -1) {
+                spreadsheet = SpreadsheetManipulation.moveColumn(spreadsheet, toMoveIndex, movementParameters.isInsertBefore()
+                        ? indexToMoveTo == 0
+                        ? 0
+                        : indexToMoveTo - 1
+                        : indexToMoveTo);
+            }
+
+        }
+
+        return spreadsheet;
+    }
+
+    public static void main(String[] args) {
+        List<String[]> spreadsheet = new ArrayList<String[]>();
+
+        spreadsheet.add(new String[]{"Sample Name", "Extract Name", "Parameter Value[sequencing instrument]", "Parameter Value[library selection]", "Parameter Value[library_source]",
+                "Parameter Value[library_strategy]", "Parameter Value[library layout]", "Comment [Platform_title]", "Labeled Extract Name", "Comment [ENA_EXPERIMENT]", "Protocol REF", "Protocol REF", "Assay Name",
+                "Parameter Value[run identifier]", "Raw Data File", "Derived Data File", "Comment [Derived ArrayExpress FTP file]", "Factor Value[barcode (first 3 nt for fastq files of chip-seq libraries, first 4 nt for fastq files of small rna libraries)]",
+                "Term Source REF", "Term Accession Number", "Term Source REF", "Term Accession Number", "Factor Value[generation]", "Factor Value[rnai target: chri]",
+                "Factor Value[strain]"});
+
+        CleanupUtils protocol = new ProtocolInsertionUtil();
+        spreadsheet = protocol.processSpreadsheet(spreadsheet);
+
+        CleanupUtils move = new ColumnMoveUtil();
+        spreadsheet = move.processSpreadsheet(spreadsheet);
+
+        for (String[] row : spreadsheet) {
+            for (String columnName : row) {
+                System.out.print(columnName + "\t");
+            }
+            System.out.println();
+        }
+
+    }
+}
