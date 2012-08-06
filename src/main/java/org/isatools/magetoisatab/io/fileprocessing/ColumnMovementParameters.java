@@ -3,7 +3,9 @@ package org.isatools.magetoisatab.io.fileprocessing;
 public enum ColumnMovementParameters {
     
     ASSAY_NAME("Assay Name", "Raw Data File", true),
-    SEQUENCING_INSTRUMENT("Parameter Value[sequencing instrument]", "Assay Name", true);
+    SEQUENCING_INSTRUMENT("Parameter Value[sequencing instrument]", "Assay Name", true),
+    SEQUENCING_RUN("Parameter Value[run identifier]", "Parameter Value[sequencing instrument]", true)
+    ;
 
     private String columnName;
     private String columnNameToMoveBeside;

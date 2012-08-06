@@ -139,7 +139,7 @@ public class MAGETabIDFLoader {
     }
 
 
-    public void loadidfTab(String url, String accnum) throws IOException {
+    public void  loadidfTab(String url, String accnum) throws IOException {
 
         try {
             populateIDF();
@@ -228,6 +228,9 @@ public class MAGETabIDFLoader {
                 invPs.println("STUDY FACTORS");
 
                 for (String factorLine : factorLines) {
+                    //this is to take care of unsupported commonly used characters and match the replacements performed
+                    //in the MAGETabSDRFloader to match declared and used factors.
+                    factorLine=factorLine.replace(". #"," number");
                     invPs.println(factorLine);
                 }
 
@@ -265,7 +268,6 @@ public class MAGETabIDFLoader {
                     }
 
                 }
-
 
                 invPs.println(measurementTypes);
                 invPs.println("Study Assay Measurement Type Term Accession Number\n" +
@@ -563,7 +565,7 @@ public class MAGETabIDFLoader {
             //This is to handle ArrayExpress GEO to MAGE converter propagating PubMed ID to the Publication DOI field
             else if (rowName.startsWith("Publication DOI")) {
 
-                String line = arrayToString(nextLine).replaceFirst("Publication", "Study Publication DOI");
+                String line = arrayToString(nextLine).replaceFirst("Publication DOI", "Study Publication DOI");
                 if (publicationLines == null) {
                     publicationLines = new ArrayList<String>();
                 }
@@ -587,10 +589,10 @@ public class MAGETabIDFLoader {
                 String line = arrayToString(nextLine).toLowerCase().replaceFirst("experimental factor type", "Study Factor Type");
                 factorLines.set(1, line);
             } else if (rowName.endsWith("Factor Term Accession")) {
-                String line = arrayToString(nextLine).replaceFirst("Experimental", "Study");
+                String line = arrayToString(nextLine).replaceFirst("Experimental Factor", "Study Factor Type");
                 factorLines.set(2, line);
             } else if (rowName.endsWith("Factor Term Source REF")) {
-                String line = arrayToString(nextLine).replaceFirst("Experimental", "Study");
+                String line = arrayToString(nextLine).replaceFirst("Experimental Factor", "Study Factor Type");
                 factorLines.set(3, line);
             } else if ((rowName.contains("Experimental Design")) && (!(rowName.contains("Experimental Design Term")))) {
 

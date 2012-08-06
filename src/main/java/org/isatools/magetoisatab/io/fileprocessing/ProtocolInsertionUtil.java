@@ -3,6 +3,7 @@ package org.isatools.magetoisatab.io.fileprocessing;
 import org.isatools.manipulator.SpreadsheetManipulation;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -71,12 +72,11 @@ public class ProtocolInsertionUtil extends CleanupUtils {
                 if (lastProtocolREFIndex == -1 && currentWrongLocation == null) {
                     // we have a rogue column
                     currentWrongLocation = new WrongLocations(currentIndex, lastNodeIndex);
+                    System.out.println("inserting protocol before: "+ columnName);
                 }
             } else {
                 lastProtocolREFIndex = -1;
             }
-
-
             currentIndex++;
         }
 
@@ -94,7 +94,9 @@ public class ProtocolInsertionUtil extends CleanupUtils {
 
         InferredProtocolTypes inferredType = InferredProtocolTypes.selectTypeGivenNodes(firstNode, lastNode);
         if (inferredType != null) {
+
             return inferredType.getType();
+
         }
 
         return null;
@@ -138,12 +140,15 @@ public class ProtocolInsertionUtil extends CleanupUtils {
         List<String[]> spreadsheet = new ArrayList<String[]>();
 
         spreadsheet.add(new String[]{"Sample Name", "Extract Name", "Parameter Value[sequencing instrument]", "Parameter Value[library selection]", "Parameter Value[library_source]",
-                "Parameter Value[library_strategy]", "Parameter Value[library layout]", "Comment [Platform_title]", "Labeled Extract Name", "Comment [ENA_EXPERIMENT]", "Protocol REF", "Protocol REF", "Assay Name",
+                "Parameter Value[library_strategy]", "Parameter Value[library layout]", "Comment [Platform_title]", "Labeled Extract Name","Assay Name", "Comment [ENA_EXPERIMENT]", "Protocol REF", "Protocol REF",
                 "Parameter Value[run identifier]", "Raw Data File", "Derived Data File", "Comment [Derived ArrayExpress FTP file]", "Factor Value[barcode (first 3 nt for fastq files of chip-seq libraries, first 4 nt for fastq files of small rna libraries)]",
                 "Term Source REF", "Term Accession Number", "Term Source REF", "Term Accession Number", "Factor Value[generation]", "Factor Value[rnai target: chri]",
                 "Factor Value[strain]"});
 
         CleanupUtils cleanup = new ProtocolInsertionUtil();
-        cleanup.processSpreadsheet(spreadsheet);
+        spreadsheet= cleanup.processSpreadsheet(spreadsheet);
+        for (String[] strings : spreadsheet) {
+            System.out.println(Arrays.toString(strings));
+        }
     }
 }

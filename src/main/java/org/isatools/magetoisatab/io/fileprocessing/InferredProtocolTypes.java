@@ -12,7 +12,7 @@ public enum InferredProtocolTypes {
    SAMPLE_PREP("Source Name", "Sample Name", "material collection"),
    EXTRACTION("Sample Name", "Extract Name", "material separation"),
    LABELING("Extract Name", "Labeled Extract Name", "labeling"),
-
+   ASSAY("Labeled Extract Name", "Assay Name", "library sequencing"),
    DATA_ACQUISITION("Scan Name", "Raw Data File", "data acquisition"),
    DATA_NORMALIZATION("Assay Name", "Normalization Name", "normalization"),
    DATA_TRANSFORMATION("Normalization Name", "Data Transformation Name", "data transformation"),
