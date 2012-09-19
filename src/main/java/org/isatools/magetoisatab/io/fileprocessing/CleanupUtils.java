@@ -1,5 +1,6 @@
 package org.isatools.magetoisatab.io.fileprocessing;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -14,7 +15,7 @@ public abstract class CleanupUtils {
 
     public abstract List<String[]> processSpreadsheet(List<String[]> spreadsheet);
 
-    protected int[] convertListOfClassesToArrayOfPrimitives(List<Integer> indicesToKeep) {
+    protected int[] convertListOfClassesToArrayOfPrimitives(Collection<Integer> indicesToKeep) {
         int[] indices = new int[indicesToKeep.size()];
         int count = 0;
         for (Integer index : indicesToKeep) {
@@ -28,4 +29,7 @@ public abstract class CleanupUtils {
         return (columnName.contains("Characteristics") || columnName.contains("Factor Value")
                 || columnName.contains("Comment") || columnName.contains("Parameter Value"));
     }
+
+
+
 }

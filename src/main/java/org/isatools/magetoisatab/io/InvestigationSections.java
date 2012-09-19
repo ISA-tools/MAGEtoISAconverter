@@ -24,9 +24,19 @@ public enum InvestigationSections {
                          "Study Factor Type Term Accession",
                          "Study Factor Type Term Source REF"})
     ,
-
     STUDY_CONTACT_SECTION("STUDY CONTACTS",
-            new String[]{"blah", "blah2"});
+            new String[]{"blah", "blah2"}),
+
+
+
+     STUDY_PUBLICATION_SECTION("STUDY PUBLICATIONS",
+            new String[]{"Study PubMed ID",
+                    "Study Publication DOI",
+                    "Study Publication Author List",
+                    "Study Publication Title",
+                    "Study Publication Status",
+                    "Study Publication Status Term Accession Number",
+                    "Study Publication Status Term Source REF"});
 
     private String sectionName;
 

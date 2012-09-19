@@ -11,9 +11,15 @@ public class PrintUtils {
 
         try {
             for (int j = 0; j < study.getStudySampleLevelInformation().size(); j++) {
+
                 String newSampleRecord = "";
+                int count = 0;
                 for (String s : study.getStudySampleLevelInformation().get(j)) {
-                    newSampleRecord += s + TAB_DELIM;
+                    newSampleRecord += s;
+                    if (count != study.getStudySampleLevelInformation().get(j).length - 1) {
+                        newSampleRecord += TAB_DELIM;
+                    }
+                      count++;
                 }
                 ps.println(newSampleRecord);
             }
