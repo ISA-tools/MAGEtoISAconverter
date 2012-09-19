@@ -188,9 +188,6 @@ public class MAGETabIDFLoader {
 
                     for (String publicationLine : investigationSections.get(InvestigationSections.STUDY_PUBLICATION_SECTION)) {
 
-//                        if (protocolLine.contains("Name")) {
-//                            isaProtocolSection.put(0, protocolLine);
-//                        }
 //
 //                //if (publicationLines.size() > 0) {
 //                    for (String publicationLine : publicationLines) {
@@ -301,7 +298,7 @@ public class MAGETabIDFLoader {
 
                     for (String cmtDesignType : ConversionProperties.getDesignTypes()) { //we start at 1 as the first element of the array is the header "
 
-                        if (ConversionProperties.isValueInDesignTypes("chip-seq")) {
+                        if (ConversionProperties.isValueInDesignTypes("chip-seq")||ConversionProperties.isValueInDesignTypes("ChIP-seq")) {
 
                             for (AssayType anAssayTTMT : assayTTMT) {
                                 if ((anAssayTTMT.getMeasurement().equalsIgnoreCase("protein-DNA binding site identification")) &&
@@ -341,11 +338,22 @@ public class MAGETabIDFLoader {
 
                     for (String protocolLine : investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION)) {
 
-                        if (protocolLine.contains("Name")) {
+                        if (protocolLine.contains("Name") && technologyTypes.contains("sequencing")) {
+                            isaProtocolSection.put(0, investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION).get(0).concat("\tlibrary construction\tnucleic acid sequencing"));
+
+                        }
+                        else if (protocolLine.contains("Name"))  {
                             isaProtocolSection.put(0, protocolLine);
+
                         }
 
-                        if (protocolLine.contains("Type")) {
+                        if (protocolLine.contains("Type") && technologyTypes.contains("sequencing")) {
+                            System.out.println("protocol line: " + protocolLine);
+                            String tempProtocolType = protocolLine.concat("\tlibrary construction\tnucleic acid sequencing");
+                            isaProtocolSection.put(1,tempProtocolType);
+
+                            System.out.println("modified protocol line: " +  tempProtocolType);
+                        } else if (protocolLine.contains("Type")) {
                             isaProtocolSection.put(1, protocolLine);
                         }
 
@@ -439,7 +447,7 @@ public class MAGETabIDFLoader {
 
                             MAGETabSDRFLoader sdrfloader = new MAGETabSDRFLoader();
 
-                            Study study = sdrfloader.loadsdrfTab(sdrfDownloadLocation[counter], accnum);
+                            Study study = sdrfloader.loadsdrfTab(sdrfDownloadLocation[counter], accnum, assayTTMT);
 
                             Map<String, List<String>> table = new LinkedHashMap<String, List<String>>();
 
@@ -581,7 +589,7 @@ public class MAGETabIDFLoader {
                 investigationSections.get(InvestigationSections.STUDY_PUBLICATION_SECTION).add(line);
             }
 
-            //Now Dealing with element from Protocol Section
+            //Now Dealing with element from Study Factor Section
             else if (rowName.startsWith("Experimental Factor Name")) {
                 String line = arrayToString(nextLine).toLowerCase().replaceFirst("experimental factor name", "Study Factor Name");
                 factorLines.set(0, line);
@@ -618,8 +626,6 @@ public class MAGETabIDFLoader {
                 }
 
                 String line = arrayToString(nextLine).replace("Comment[AEExperimentType]", "Study Design Type");
-
-
                 designLines.set(0, line);
 
             } else if (rowName.startsWith("SDRF File")) {
@@ -659,18 +665,20 @@ public class MAGETabIDFLoader {
 
                 String tempLine = "";
                 tempLine = removeDuplicates(arrayToString(nextLine));
-                isaOntoSection.put(0, tempLine);
+                             isaOntoSection.put(0, tempLine);
 
             } else if (rowName.startsWith("Term Source File")) {
 
                 String tempLine = "";
                 tempLine = removeDuplicates(arrayToString(nextLine));
-                isaOntoSection.put(2, tempLine);
+                isaOntoSection.put(1, tempLine);
+
+                System.out.println("IS THIS A FILE" + tempLine);
 
             } else if (rowName.startsWith("Term Source Version")) {
                 String tempLine = "";
                 tempLine = removeDuplicates(arrayToString(nextLine));
-                isaOntoSection.put(1, tempLine);
+                isaOntoSection.put(2, tempLine);
 
             } else if (rowName.startsWith("Term Source Description")) {
 
@@ -820,6 +828,9 @@ public class MAGETabIDFLoader {
 
         if ((line.matches("(?i).*RNA-seq.*")) || (line.matches("(?i).*RNA-Seq.*")) || (line.matches("(?i).*transcription profiling by high throughput sequencing.*"))) {
             assayTypes.add(new AssayType("transcription profiling", "nucleotide sequencing", "RNA-Seq"));
+            isaProtocolSection.put(0, investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION).get(0).concat("\tlibrary construction\tnucleic acid sequencing"));
+            isaProtocolSection.put(1, investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION).get(1).concat("\tlibrary construction\tnucleic acid sequencing"));
+
         }
 
         if (line.matches(".*transcription profiling by array.*") || line.matches("dye_swap_design")) {
@@ -837,7 +848,12 @@ public class MAGETabIDFLoader {
         }
 
         if ((line.matches("(?i).*ChIP-Seq.*")) || (line.matches("(?i).*chip-seq.*"))) {
+            System.out.println("ASSAYTYPE IS: " + line);
+
             assayTypes.add(new AssayType("protein-DNA binding site identification", "nucleotide sequencing", "ChIP-Seq"));
+            isaProtocolSection.put(0, investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION).get(0).concat("\tlibrary construction\tnucleic acid sequencing"));
+            isaProtocolSection.put(1, investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION).get(1).concat("\tlibrary construction\tnucleic acid sequencing"));
+            System.out.println("PROTOCOL INSERTION: "+isaProtocolSection.put(0, investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION).get(0).concat("\tlibrary construction\tnucleic acid sequencing")));
         }
 
         return assayTypes;

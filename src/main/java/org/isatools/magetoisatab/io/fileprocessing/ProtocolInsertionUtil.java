@@ -3,7 +3,7 @@ package org.isatools.magetoisatab.io.fileprocessing;
 import org.isatools.manipulator.SpreadsheetManipulation;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -19,15 +19,44 @@ public class ProtocolInsertionUtil extends CleanupUtils {
     @Override
     public List<String[]> processSpreadsheet(List<String[]> spreadsheet) {
         String[] columnHeaders = spreadsheet.get(0);
+        int libraryConstruction = 0;
         List<WrongLocations> wrongLocationsList = processColumnHeaders(columnHeaders);
 
-        System.out.println(wrongLocationsList.size());
         Collections.sort(wrongLocationsList);
+       List<WrongLocations> cleanedWrongLocationsList = new ArrayList<WrongLocations>();
+        cleanedWrongLocationsList = (List<WrongLocations>) removeDuplicates(wrongLocationsList);
 
-        for (WrongLocations wrongLocations : wrongLocationsList) {
+        for (WrongLocations wrongLocations : cleanedWrongLocationsList) {
+
             String inferredType = inferProtocolType(wrongLocations, columnHeaders);
+            final int valueToInsertAt = wrongLocations.getParameterValueLocation();
             inferredType = (inferredType == null) ? "" : inferredType;
-            spreadsheet = SpreadsheetManipulation.insertColumn(spreadsheet, "Protocol REF", wrongLocations.getParameterValueLocation(), inferredType);
+
+            System.out.println("wrong location: "+wrongLocations.getParameterValueLocation() +" @ " + columnHeaders[wrongLocations.getParameterValueLocation()]);
+
+            if (columnHeaders[valueToInsertAt].contains("ibrary")) {  //||columnHeaders[valueToInsertAt].contains("mid-L")
+                //TODO: add as missing from investigation file  by calling a addProtocolObject2InvFile method
+                inferredType="library construction";
+                spreadsheet = SpreadsheetManipulation.insertColumn(spreadsheet, "Protocol REF", valueToInsertAt, inferredType);
+                //System.out.println("inferred protocol is: " + inferredType.toString());
+                //System.out.println("insertion before: "+ columnHeaders[valueToInsertAt]);
+            }
+
+           else if (columnHeaders[valueToInsertAt].contains("instrument") && (columnHeaders[valueToInsertAt-1].contains("run")||columnHeaders[valueToInsertAt+1].contains("run") ))    {     //
+                //TODO: add as missing from investigation file
+                inferredType="nucleic acid sequencing";
+                spreadsheet = SpreadsheetManipulation.insertColumn(spreadsheet, "Protocol REF", valueToInsertAt, inferredType);
+                //System.out.println("inferred protocol is:: " + inferredType);
+
+            }
+
+            else if (columnHeaders[valueToInsertAt].contains("instrument") && (!columnHeaders[valueToInsertAt-1].contains("run")&& !columnHeaders[valueToInsertAt+1].contains("run") ))    {     //
+                inferredType="nucleic acid sequencing";
+                spreadsheet = SpreadsheetManipulation.insertColumn(spreadsheet, "Protocol REF", valueToInsertAt, inferredType);
+                //System.out.println("inferred protocol is:: " + inferredType);
+
+            }
+
         }
 
         return spreadsheet;
@@ -43,8 +72,8 @@ public class ProtocolInsertionUtil extends CleanupUtils {
         int lastNodeIndex = -1;
         int lastProtocolREFIndex = -1;
         int currentIndex = 0;
-        for (String columnName : columnNames) {
 
+        for (String columnName : columnNames) {
             // detecting nodes
             if (!isColumnNameOk(columnName)) {
                 if (lastNodeIndex != -1) {
@@ -72,11 +101,32 @@ public class ProtocolInsertionUtil extends CleanupUtils {
                 if (lastProtocolREFIndex == -1 && currentWrongLocation == null) {
                     // we have a rogue column
                     currentWrongLocation = new WrongLocations(currentIndex, lastNodeIndex);
-                    System.out.println("inserting protocol before: "+ columnName);
+                    if (!wrongLocationsList.contains(currentWrongLocation))
+                    wrongLocationsList.add(currentWrongLocation);
                 }
-            } else {
+            }
+
+            if  (isSequencingInstrumentRelatedColumn(columnName)) {
+
+                // check if we've seen a protocol ref before this...
+                if (lastProtocolREFIndex == -1 && currentWrongLocation == null) {
+                    // we have a rogue column
+                    currentWrongLocation = new WrongLocations(currentIndex, lastNodeIndex);
+                    if (!wrongLocationsList.contains(currentWrongLocation))
+                    wrongLocationsList.add(currentWrongLocation);
+                    System.out.println("from isSequencingInstrumentRelatedColumn method call: " + columnName + "current index: "+currentIndex);
+                }
+                else if  (lastProtocolREFIndex == -1 && currentWrongLocation != null)  {
+                    currentWrongLocation = new WrongLocations(currentIndex, lastNodeIndex);
+                    if (!wrongLocationsList.contains(currentWrongLocation))
+                    wrongLocationsList.add(currentWrongLocation);
+                }
+            }
+
+            else {
                 lastProtocolREFIndex = -1;
             }
+
             currentIndex++;
         }
 
@@ -84,7 +134,12 @@ public class ProtocolInsertionUtil extends CleanupUtils {
     }
 
     private boolean isOtherProtocolRelatedColumn(String columnName) {
-        return columnName.equals("Performer") || columnName.equals("Date") || columnName.contains("Parameter Value");
+        return columnName.equals("Performer") || columnName.equals("Date") ||  columnName.contains("Parameter Value") ;
+    }
+
+
+    private boolean isSequencingInstrumentRelatedColumn(String columnName) {
+        return columnName.contains("sequencing instrument");
     }
 
     private String inferProtocolType(WrongLocations wrongLocations, String[] columnHeaders) {
@@ -95,12 +150,28 @@ public class ProtocolInsertionUtil extends CleanupUtils {
         InferredProtocolTypes inferredType = InferredProtocolTypes.selectTypeGivenNodes(firstNode, lastNode);
         if (inferredType != null) {
 
+
             return inferredType.getType();
 
         }
 
         return null;
     }
+
+    public Collection removeDuplicates(Collection c) {
+// Returns a new collection with duplicates removed from passed collection.
+        Collection result = new ArrayList();
+
+        for(Object o : c) {
+            if (!result.contains(o)) {
+                result.add(o);
+            }
+        }
+
+        return result;
+    }
+
+
 
 
     class WrongLocations implements Comparable<WrongLocations> {
@@ -133,22 +204,6 @@ public class ProtocolInsertionUtil extends CleanupUtils {
             return wrongLocations.getParameterValueLocation() < parameterValueLocation ?
                     -1 : wrongLocations.getParameterValueLocation() == parameterValueLocation
                     ? 0 : 1;
-        }
-    }
-
-    public static void main(String[] args) {
-        List<String[]> spreadsheet = new ArrayList<String[]>();
-
-        spreadsheet.add(new String[]{"Sample Name", "Extract Name", "Parameter Value[sequencing instrument]", "Parameter Value[library selection]", "Parameter Value[library_source]",
-                "Parameter Value[library_strategy]", "Parameter Value[library layout]", "Comment [Platform_title]", "Labeled Extract Name","Assay Name", "Comment [ENA_EXPERIMENT]", "Protocol REF", "Protocol REF",
-                "Parameter Value[run identifier]", "Raw Data File", "Derived Data File", "Comment [Derived ArrayExpress FTP file]", "Factor Value[barcode (first 3 nt for fastq files of chip-seq libraries, first 4 nt for fastq files of small rna libraries)]",
-                "Term Source REF", "Term Accession Number", "Term Source REF", "Term Accession Number", "Factor Value[generation]", "Factor Value[rnai target: chri]",
-                "Factor Value[strain]"});
-
-        CleanupUtils cleanup = new ProtocolInsertionUtil();
-        spreadsheet= cleanup.processSpreadsheet(spreadsheet);
-        for (String[] strings : spreadsheet) {
-            System.out.println(Arrays.toString(strings));
         }
     }
 }

@@ -9,6 +9,7 @@ import org.isatools.magetoisatab.io.fileprocessing.CleanupRunner;
 import org.isatools.magetoisatab.io.fileprocessing.ColumnMoveUtil;
 import org.isatools.magetoisatab.io.fileprocessing.ProtocolInsertionUtil;
 import org.isatools.magetoisatab.io.model.Assay;
+import org.isatools.magetoisatab.io.model.AssayType;
 import org.isatools.magetoisatab.io.model.Study;
 import org.isatools.magetoisatab.utils.Column;
 import org.isatools.magetoisatab.utils.ConversionProperties;
@@ -63,9 +64,10 @@ public class MAGETabSDRFLoader {
         samples = new HashMap<Integer, String[]>();
 
         assaysFromGivenSDRF = new HashSet<String[]>();
+
     }
 
-    public Study loadsdrfTab(String url, String accnum) throws IOException {
+    public Study loadsdrfTab(String url, String accnum, List<AssayType> assayTTMT) throws IOException {
 
         List<String[]> studySamplesFromThisSDRF = new ArrayList<String[]>();
         List<Assay> assaysFromThisSDRF = new ArrayList<Assay>();
@@ -78,6 +80,7 @@ public class MAGETabSDRFLoader {
             File file = new File(url);
 
             if (file.exists()) {
+
 
                 Loader fileReader = new Loader();
                 List<String[]> sheetData = fileReader.loadSheet(url, FileType.TAB);
@@ -104,22 +107,17 @@ public class MAGETabSDRFLoader {
                 for (int columnIndex = 0; columnIndex < columnNames.length; columnIndex++) {
 
                     if (!columnNames[columnIndex].trim().equals("")) {
-                       // System.out.println("There: " + columnNames[columnIndex]);
 
                         if (!(columnNames[columnIndex].equalsIgnoreCase("term source ref") && columnNames[columnIndex - 1].equalsIgnoreCase("protocol ref"))
                                 &&
                                 !(columnNames[columnIndex].equalsIgnoreCase("term source ref") && columnNames[columnIndex - 1].equalsIgnoreCase("array design ref"))
-                            // &&
-                            //(columnNames[columnIndex].equalsIgnoreCase("material type"))
                                 ) {
                             positions2keep.add(columnIndex);
                         }
-
                     }
 
-
                     if (columnNames[columnIndex].equalsIgnoreCase("technology type")) {
-                        tt=1;
+                        tt = 1;
                         System.out.println("SDRF has 'technology type' header");
                     }
 
@@ -128,17 +126,15 @@ public class MAGETabSDRFLoader {
                     }
 
                     if (columnNames[columnIndex].startsWith("Factor Value")) {
-
                         columnNames[columnIndex] = columnNames[columnIndex].toLowerCase();
                         columnNames[columnIndex] = columnNames[columnIndex].replaceAll("factor value ", "Factor Value");
                         columnNames[columnIndex] = columnNames[columnIndex].replace(". #", "#").replace("#", " number");
-                        //System.out.println("There is a factor value at position: " + columnIndex);
                         factorPositions2Keep.add(columnIndex);
                     }
                 }
 
                 factorSheetData = SpreadsheetManipulation.getColumnSubset(sheetData, true, convertIntegers(factorPositions2Keep));
-                      sheetData = SpreadsheetManipulation.getColumnSubset(sheetData, true, convertIntegers(positions2keep));
+                sheetData = SpreadsheetManipulation.getColumnSubset(sheetData, true, convertIntegers(positions2keep));
 
                 //getting the associated header row in order to perform identification of field positions prior to reordering
                 columnNames = SpreadsheetManipulation.getColumnHeaders(sheetData);
@@ -147,7 +143,7 @@ public class MAGETabSDRFLoader {
 
                 //where does Assay Name field appear?
                 int assayNameIndex = Utils.getIndexForValue("Assay Name", columnOrders);
-                System.out.println("Assay Name field found at: " +assayNameIndex    );
+                System.out.println("Assay Name field found at: " + assayNameIndex);
 
                 //where does Data Transformation Name field appear?
                 int dtNameIndex = -1;
@@ -168,8 +164,7 @@ public class MAGETabSDRFLoader {
                     if (derivedArrayDataFileIndex > 0 && scanNameIndex > 0) {
                         Column scanName = columnOrders.remove(Utils.getIndexForValue("Scan Name", columnOrders));
                         columnOrders.add(derivedArrayDataFileIndex - 1, scanName);
-                    }
-                    else if (derivedArrayDataFileIndex == 0 && scanNameIndex > 0) {
+                    } else if (derivedArrayDataFileIndex == 0 && scanNameIndex > 0) {
                         Column scanName = columnOrders.remove(Utils.getIndexForValue("Scan Name", columnOrders));
                         columnOrders.add(assayNameIndex + 1, scanName);
                     }
@@ -182,7 +177,7 @@ public class MAGETabSDRFLoader {
                     columnOrders.add(derivedArrayDataFileIndex - 1, derivedDataFile);
                 }
 
-                //fetching and moving the platform title field if present , next to ?
+                //fetching and moving the platform title field if present
                 if (ptf >= 0) {
                     Column platformTitle = columnOrders.remove(Utils.getIndexForValue("comment [platform_title]", columnOrders));
                     columnOrders.add(assayNameIndex + 1, platformTitle);
@@ -201,7 +196,7 @@ public class MAGETabSDRFLoader {
 
                 Pair<List<String[]>, List<String[]>> studySplitTables = splitSdrfTable(sdrfKeyPositions, sheetDataSubset, factorSheetData);
                 study.setStudySampleLevelInformation(studySplitTables.fst);
-                assaysFromThisSDRF = inspectSdrfAssay(studySplitTables.snd);
+                assaysFromThisSDRF = inspectSdrfAssay(studySplitTables.snd, assayTTMT);
                 study.setAssays(assaysFromThisSDRF);
 
                 //We are now iterating through the different assays and printing them
@@ -209,7 +204,7 @@ public class MAGETabSDRFLoader {
                 for (Assay anAssaysFromThisSDRF : assaysFromThisSDRF) {
                     for (String key : anAssaysFromThisSDRF.getAssayLevelInformation().keySet()) {
                         List<String[]> assaySpreadsheet = anAssaysFromThisSDRF.getAssayLevelInformation().get(key);
-                        assaySpreadsheet = CleanupRunner.runSelected(assaySpreadsheet, new ProtocolInsertionUtil(), new ColumnMoveUtil());
+                        assaySpreadsheet = CleanupRunner.runSelected(assaySpreadsheet, new ColumnMoveUtil(),new ProtocolInsertionUtil());  // ,
                         PrintStream assayPs = new PrintStream(new File(DownloadUtils.CONVERTED_DIRECTORY + File.separator + accnum + "/a_" + accnum + "_" + key + "_assay.txt"));
                         for (String[] records : assaySpreadsheet) {
                             String newAssayRecord = "";
@@ -250,17 +245,14 @@ public class MAGETabSDRFLoader {
         int val = 0;
 
         for (String anArray : array) {
-
             // here we check which fields to drop
             if ((columns2drop.contains(val))) {
                 val++;
             }
             //otherwise we print
             else if (anArray != null) {
-
                 //provided the value is not equal to null, we append to the record
                 blockAsString.append(anArray);
-
                 //join record with a tab
                 if ((val != array.length - 1)) {
                     blockAsString.append(TAB_DELIM);
@@ -268,7 +260,6 @@ public class MAGETabSDRFLoader {
                 }
             }
         }
-
         return blockAsString.toString();
     }
 
@@ -286,6 +277,7 @@ public class MAGETabSDRFLoader {
      * A Method of to process SRDF header
      * input is a SRDF file name
      * output is an list of fields, and an index where to split the SDRF
+     *  @return a pair of integers indicating the position of the first Material Node and its depth
      */
     public Pair<Integer, Integer> processSdrfHeaderRow(String[] headerRow) {
 
@@ -294,10 +286,10 @@ public class MAGETabSDRFLoader {
 
         this.columnNames = headerRow;
 
-
-        System.out.println("header : " + Arrays.toString(this.columnNames));
+        //System.out.println("header : " + Arrays.toString(this.columnNames));
 
         String columnNamesAsString = getArrayAsString(columnNames);
+
         if (columnNamesAsString.contains("Sample Name")) {
             isPresentSample = true;
         }
@@ -358,11 +350,8 @@ public class MAGETabSDRFLoader {
                             break;   // we have found a Sample Name field, we can leave (but we need to handle the case where no such header is present...
                         }
                     }
-
-                }
-
-
-            } else {
+               }
+           } else {
 
                 for (int i = 0; i < headerRow.length; i++) {
 
@@ -373,7 +362,6 @@ public class MAGETabSDRFLoader {
                         break;   // we have found a Sample Name field, we can leave (but we need to handle the case where no such header is present...
                     }
                 }
-
             }
         } else {
 
@@ -401,9 +389,6 @@ public class MAGETabSDRFLoader {
         List<String[]> sdrfStudySampleTable = new ArrayList<String[]>();
         List<String[]> sdrfAssayTable = new ArrayList<String[]>();
 
-        //HashMap<String, ArrayList<String[]>> assaysFromThisSDRF = new HashMap<String, ArrayList<String[]>>();
-        //Pair<ArrayList<String[]>, ArrayList<String[]>> srdfSplitTables = new Pair<ArrayList<String[]>, ArrayList<String[]>>(sdrfStudySampleTable, sdrfAssayTable);
-
         String studySampleHeaders = "";
         String studyAssayHeaders = "";
 
@@ -414,8 +399,8 @@ public class MAGETabSDRFLoader {
         Integer secondIndexNodeDepth = indices.snd;
 
         int dataTransNameIndex;
-        int instrumentIndex=-1;
-        int assayNamePosition=-1;
+        int instrumentIndex = -1;
+        int assayNamePosition = -1;
 
         //This test catches malformed MAGE-TAB files (i.e MAGE-TAB files starting with things other than Source Name)
         if (firstIndexNodePosition > 0) {
@@ -451,11 +436,10 @@ public class MAGETabSDRFLoader {
                     if (columnNames[columnIndex].equalsIgnoreCase("Hybridization Name")) {
                         columnNames[columnIndex] = "Hybridization Assay Name";
                         studyAssayHeaders += columnNames[columnIndex] + TAB_DELIM;
-                    }
-                    else if (columnNames[columnIndex].equalsIgnoreCase("Assay Name") && tt>=0) {
+                    } else if (columnNames[columnIndex].equalsIgnoreCase("Assay Name") && tt >= 0) {
 
-                        assayNamePosition=columnIndex;
-                        System.out.println("TECHTYPE: "+tt + assayNamePosition);
+                        assayNamePosition = columnIndex;
+                        System.out.println("TECHTYPE: " + tt + assayNamePosition);
                         //columnNames[columnIndex] = "Labeled Extract Name";
                         studyAssayHeaders += columnNames[columnIndex] + TAB_DELIM;
                     }
@@ -476,14 +460,14 @@ public class MAGETabSDRFLoader {
 
                     //Here in case Sequencing is used (tt>=0) we replace MAGE-TAB Label field with Parameter Value[mid] , corresponding to multiplex barcodes
                     else if ((columnNames[columnIndex].equalsIgnoreCase("Label")) && (tt >= 0)) {
-                        columnNames[columnIndex] = "Parameter Value[mid-Label]";
+                        columnNames[columnIndex] = "Parameter Value[library mid]";
                         studyAssayHeaders += columnNames[columnIndex] + TAB_DELIM;
                     }
                     //Here in case Sequencing is used (tt>=0) we replace MAGE-TAB Technology Type field with Parameter Value[library layout]
                     else if ((columnNames[columnIndex].equalsIgnoreCase("Technology Type")) && (tt >= 0)) {
-                        columnNames[columnIndex] = "Parameter Value[library layout]";
-                        assayNamePosition=columnIndex-1;
-                        System.out.println("Assay Name found at: "+ assayNamePosition);
+                        columnNames[columnIndex] = "Comment[technology type]";
+                        assayNamePosition = columnIndex - 1;
+                        System.out.println("Assay Name found at: " + assayNamePosition);
                         studyAssayHeaders += columnNames[columnIndex] + TAB_DELIM;
                     }
                     //Here in case Sequencing is used (tt>=0) we replace MAGE-TAB Technology Type field with Parameter Value[sequencing instrument]
@@ -491,19 +475,15 @@ public class MAGETabSDRFLoader {
                         columnNames[columnIndex] = "Parameter Value[sequencing instrument]";
                         studyAssayHeaders += columnNames[columnIndex] + TAB_DELIM;
                         instrumentIndex = columnIndex;
-                        System.out.println("INSTRUMENT MODEL: "+instrumentIndex);
-                    }
+                        System.out.println("INSTRUMENT MODEL: " + instrumentIndex);
+                    } else if (!(instrumentIndex > 0) && ((columnNames[columnIndex].equalsIgnoreCase("comment [platform_title]") || (columnNames[columnIndex].equalsIgnoreCase("comment [platform title]"))))) { //&& (instrumentIndex>0)
 
-                    else if (   !(instrumentIndex>0) && ((columnNames[columnIndex].equalsIgnoreCase("comment [platform_title]")||(columnNames[columnIndex].equalsIgnoreCase("comment [platform title]"))) ))   { //&& (instrumentIndex>0)
-
-                        System.out.println("PLATFORM title INDEX before: "+instrumentIndex);
+                        System.out.println("PLATFORM title INDEX before: " + instrumentIndex);
                         columnNames[columnIndex] = "Parameter Value[sequencing instrument]";
                         studyAssayHeaders += columnNames[columnIndex] + TAB_DELIM;
                         instrumentIndex = columnIndex;
-                        System.out.println("PLATFORM title INDEX: "+instrumentIndex);
-                    }
-
-                    else if ((columnNames[columnIndex].equalsIgnoreCase("comment [platform_title]") || (columnNames[columnIndex].equalsIgnoreCase("comment [platform title]")) && (instrumentIndex<0))) {
+                        System.out.println("PLATFORM title INDEX: " + instrumentIndex);
+                    } else if ((columnNames[columnIndex].equalsIgnoreCase("comment [platform_title]") || (columnNames[columnIndex].equalsIgnoreCase("comment [platform title]")) && (instrumentIndex < 0))) {
                         studyAssayHeaders += columnNames[columnIndex] + TAB_DELIM;
                     }
 
@@ -522,30 +502,34 @@ public class MAGETabSDRFLoader {
                         columnNames[columnIndex] = "Parameter Value[library_strategy]";
                         studyAssayHeaders += columnNames[columnIndex] + TAB_DELIM;
                     }
+                    //Here in case Sequencing is used (tt>=0) we replace MAGE-TAB Technology Type field with Parameter Value[library_strategy]
+                    else if ((columnNames[columnIndex].equalsIgnoreCase("comment [library_layout]")) && (tt >= 0)) {
+                        columnNames[columnIndex] = "Parameter Value[library_layout]";
+                        studyAssayHeaders += columnNames[columnIndex] + TAB_DELIM;
+                    }
 
                     //Here in case Sequencing is used (tt>=0) we replace MAGE-TAB Scan Name field with Assay Name (mapped to SRA Run,which are technical replicates, and SRAExperiment matches a library
-                    else if (columnNames[columnIndex].equalsIgnoreCase("Scan Name") && (tt >= 0) && assayNamePosition<0) {
-                        System.out.println("Scan Name Found, assay index is: "+assayNamePosition);
+                    else if (columnNames[columnIndex].equalsIgnoreCase("Scan Name") && (tt >= 0) && assayNamePosition < 0) {
+                        System.out.println("Scan Name Found, assay index is: " + assayNamePosition);
                         columnNames[columnIndex] = "Assay Name";
                         assayNamePosition = columnIndex;
                         studyAssayHeaders += columnNames[columnIndex] + TAB_DELIM;
 
                     }
                     //we have already found an Assay and technology is sequencing, therefore we rename Scan Name Field to a Comment
-                    else if (columnNames[columnIndex].equalsIgnoreCase("Scan Name") && (tt >= 0) && assayNamePosition>0) {
-                        System.out.println("Scan Name Found, assay index is: "+assayNamePosition);
+                    else if (columnNames[columnIndex].equalsIgnoreCase("Scan Name") && (tt >= 0) && assayNamePosition > 0) {
+                        System.out.println("Scan Name Found, assay index is: " + assayNamePosition);
                         columnNames[columnIndex] = "Comment[Assay Name]";
                         assayNamePosition = columnIndex;
                         studyAssayHeaders += columnNames[columnIndex] + TAB_DELIM;
 
                     }
                     //we have not yet found an Assay Name field in Mage-Tab and technology is sequencing, we therefore fall back on ENA_EXPERIMENT comment to create an Assay
-                    else if ((columnNames[columnIndex].equalsIgnoreCase("comment [ENA_EXPERIMENT]")) && (tt >= 0) && assayNamePosition<0) {
-                        System.out.println("ENA_Experiment Found assay index is: "+assayNamePosition);
+                    else if ((columnNames[columnIndex].equalsIgnoreCase("comment [ENA_EXPERIMENT]")) && (tt >= 0) && assayNamePosition < 0) {
+                        System.out.println("ENA_Experiment Found assay index is: " + assayNamePosition);
                         columnNames[columnIndex] = "Assay Name";
                         studyAssayHeaders += columnNames[columnIndex] + TAB_DELIM;
-                    }
-                    else if ((columnNames[columnIndex].equalsIgnoreCase("comment [ENA_RUN]")) && (tt >= 0)) {
+                    } else if ((columnNames[columnIndex].equalsIgnoreCase("comment [ENA_RUN]")) && (tt >= 0)) {
                         columnNames[columnIndex] = "Parameter Value[run identifier]";
                         studyAssayHeaders += columnNames[columnIndex] + TAB_DELIM;
 
@@ -565,14 +549,12 @@ public class MAGETabSDRFLoader {
                         columnNames[columnIndex] = "Data Transformation Name\tDerived Data File";
                         dataTransNameIndex = columnIndex;
                         studyAssayHeaders += columnNames[columnIndex] + TAB_DELIM;
-                    }
-                    else if (columnNames[columnIndex].startsWith("Factor Value ")) {
+                    } else if (columnNames[columnIndex].startsWith("Factor Value ")) {
                         columnNames[columnIndex] = columnNames[columnIndex].toLowerCase();
                         columnNames[columnIndex] = columnNames[columnIndex].replaceAll("factor\\s*value ", "Factor Value");
                         columnNames[columnIndex] = columnNames[columnIndex].replace(". #", "#").replace("#", " number");
                         studyAssayHeaders += columnNames[columnIndex] + TAB_DELIM;
-                    }
-                    else if (columnNames[columnIndex].contains("#")) {
+                    } else if (columnNames[columnIndex].contains("#")) {
                         columnNames[columnIndex] = columnNames[columnIndex].replace(". #", "#").replace("#", " number");
                     } else {
                         studyAssayHeaders += columnNames[columnIndex] + TAB_DELIM;
@@ -588,10 +570,7 @@ public class MAGETabSDRFLoader {
             sdrfStudySampleTable.add(studySampleHeaders.split("\\t"));
             sdrfAssayTable.add(studyAssayHeaders.split("\\t"));
             System.out.println("Assay Header:" + Arrays.toString(sdrfAssayTable.get(0)));
-
         } else {
-
-            System.out.println("SDRF Processing: REALLY?? Study Sample position is: " + firstIndexNodePosition);
             studySampleHeaders = studySampleHeaders + "Sample Name";
             sdrfStudySampleTable.add(studySampleHeaders.split("\\t"));
         }
@@ -602,106 +581,14 @@ public class MAGETabSDRFLoader {
         for (String[] sdrfRecord : sheetDataSubset) {
 
             if (firstIndexNodePosition > 0 && (secondIndexNodeDepth == 0)) {
-
-                String[] sampleRecord = new String[firstIndexNodePosition + 1];
-
-                if (sdrfRecord.length - firstIndexNodePosition > 0) {
-
-                    String[] assayRecord = new String[sdrfRecord.length - (firstIndexNodePosition + 1)];
-
-                    for (int j = 0; j < sdrfRecord.length; j++) {
-
-                        //we are pushing the data to the study sample table
-                        if (j < firstIndexNodePosition) {
-                            sampleRecord[j] = sdrfRecord[j];
-                        }
-                        //we are dealing with the hinge point, same information is pushed to study sample and assay table
-                        else if (j == firstIndexNodePosition) {
-                            sampleRecord[j] = sdrfRecord[j];
-                            assayRecord[j - firstIndexNodePosition] = sdrfRecord[j];
-                        }
-                        //we are pushing the rest of the data to the assay table
-                        else {
-                            assayRecord[j - firstIndexNodePosition] = sdrfRecord[j];
-                        }
-                    }
-                    sdrfAssayTable.add(assayRecord);
-                }
-                sdrfStudySampleTable.add(sampleRecord);
-            }
-            //  Sample Name is present  and Extract Name is the first Material Node
-            else if (firstIndexNodePosition > 0 && (secondIndexNodeDepth == 1)) {   //&& counter > 0
-
-                String[] sampleRecord = new String[firstIndexNodePosition + 1];
-
-                if (sdrfRecord.length - firstIndexNodePosition > 0) {
-
-                    String[] assayRecord = new String[sdrfRecord.length - (firstIndexNodePosition + 1) + 1];
-
-                    for (int j = 0; j < sdrfRecord.length; j++) {
-
-                        if (j < firstIndexNodePosition) {
-                            sampleRecord[j] = sdrfRecord[j];
-                        } else if (j == firstIndexNodePosition) {
-                            sampleRecord[j] = sdrfRecord[j];
-                            assayRecord[j - firstIndexNodePosition] = sdrfRecord[j];
-                        } else {
-                            assayRecord[j - firstIndexNodePosition] = sdrfRecord[j];
-                        }
-                    }
-
-                    sdrfAssayTable.add(assayRecord);
-
-                }
-
-                sdrfStudySampleTable.add(sampleRecord);
-
+                insertMissingNode(sdrfStudySampleTable, sdrfAssayTable, firstIndexNodePosition, sdrfRecord, 1);
+            } else if (firstIndexNodePosition > 0 && (secondIndexNodeDepth == 1)) {   //&& counter > 0
+                //  Sample Name is present  and Extract Name is the first Material Node
+                insertMissingNode(sdrfStudySampleTable, sdrfAssayTable, firstIndexNodePosition, sdrfRecord, secondIndexNodeDepth);
             } else if (firstIndexNodePosition > 0 && secondIndexNodeDepth == 2) {
-
-                String[] sampleRecord = new String[firstIndexNodePosition + 1];
-
-                if (sdrfRecord.length - firstIndexNodePosition > 0) {
-
-                    String[] assayRecord = new String[sdrfRecord.length - (firstIndexNodePosition + 1) + 1];
-
-                    for (int j = 0; j < sdrfRecord.length; j++) {
-
-                        if (j < firstIndexNodePosition) {
-                            sampleRecord[j] = sdrfRecord[j];
-                        } else if (j == firstIndexNodePosition) {
-                            sampleRecord[j] = sdrfRecord[j];
-                            assayRecord[j - firstIndexNodePosition] = sdrfRecord[j] + TAB_DELIM + sdrfRecord[j];
-                        } else {
-                            assayRecord[j - firstIndexNodePosition] = sdrfRecord[j];
-                        }
-                    }
-                    sdrfAssayTable.add(assayRecord);
-                }
-
-                sdrfStudySampleTable.add(sampleRecord);
-
+                insertMissingNode(sdrfStudySampleTable, sdrfAssayTable, firstIndexNodePosition, sdrfRecord, secondIndexNodeDepth);
             } else if (firstIndexNodePosition > 0 && secondIndexNodeDepth == 3) {
-
-                String[] sampleRecord = new String[firstIndexNodePosition + 1];
-
-                if (sdrfRecord.length - firstIndexNodePosition > 0) {
-
-                    String[] assayRecord = new String[sdrfRecord.length - (firstIndexNodePosition + 1) + 2];
-
-                    for (int j = 0; j < sdrfRecord.length; j++) {
-
-                        if (j < firstIndexNodePosition) {
-                            sampleRecord[j] = sdrfRecord[j];
-                        } else if (j == firstIndexNodePosition) {
-                            sampleRecord[j] = sdrfRecord[j];
-                            assayRecord[j - firstIndexNodePosition] = sdrfRecord[j] + TAB_DELIM + sdrfRecord[j] + TAB_DELIM + sdrfRecord[j];
-                        } else {
-                            assayRecord[j - firstIndexNodePosition] = sdrfRecord[j];
-                        }
-                    }
-                    sdrfAssayTable.add(assayRecord);
-                }
-                sdrfStudySampleTable.add(sampleRecord);
+                insertMissingNode(sdrfStudySampleTable, sdrfAssayTable, firstIndexNodePosition, sdrfRecord, secondIndexNodeDepth);
             }
         }
 
@@ -724,12 +611,35 @@ public class MAGETabSDRFLoader {
 
                 System.arraycopy(tempFactorRecord, 1, newRecord, tempRecord.length, tempFactorRecord.length - 1);
 
-                // System.out.println("GREAT"+ Arrays.toString(newRecord));
-
                 sdrfStudySampleTableCumFactors.add(newRecord);
             }
         }
         return new Pair<List<String[]>, List<String[]>>(sdrfStudySampleTableCumFactors, sdrfAssayTable);
+    }
+
+    private void insertMissingNode(List<String[]> sdrfStudySampleTable, List<String[]> sdrfAssayTable, Integer firstAssayNodeIndex, String[] sdrfRecord, int secondIndexNodeDepth) {
+        List<String> sampleRecord = new ArrayList<String>();
+
+        int offset = 0;
+        if (sdrfRecord.length - firstAssayNodeIndex > 0) {
+            List<String> assayRecord = new ArrayList<String>();
+            for (int sdrfColumnIndex = 0; sdrfColumnIndex < sdrfRecord.length; sdrfColumnIndex++) {
+                if (sdrfColumnIndex < firstAssayNodeIndex) {
+                    sampleRecord.add(sdrfColumnIndex, sdrfRecord[sdrfColumnIndex]);
+                } else if (sdrfColumnIndex == firstAssayNodeIndex) {
+                    sampleRecord.add(sdrfColumnIndex, sdrfRecord[sdrfColumnIndex]);
+                    offset = secondIndexNodeDepth -1;
+                    for (int insertionCount = 0; insertionCount < secondIndexNodeDepth; insertionCount++) {
+                        assayRecord.add((sdrfColumnIndex - firstAssayNodeIndex) + insertionCount, sdrfRecord[sdrfColumnIndex]);
+                    }
+                } else {
+                    assayRecord.add((sdrfColumnIndex - firstAssayNodeIndex) + offset, sdrfRecord[sdrfColumnIndex]);
+                }
+            }
+
+            sdrfAssayTable.add(assayRecord.toArray(new String[assayRecord.size()]));
+        }
+        sdrfStudySampleTable.add(sampleRecord.toArray(new String[sampleRecord.size()]));
     }
 
     /*
@@ -737,7 +647,7 @@ public class MAGETabSDRFLoader {
    in case SDRF contains more than one assay type.
    The method returns a HashMap where the key as assay type and the values are ArrayList of assay records.
     */
-    private List<Assay> inspectSdrfAssay(List<String[]> sdrfAssayTableAsInput) {
+    private List<Assay> inspectSdrfAssay(List<String[]> sdrfAssayTableAsInput, List<AssayType> assayTTMT) {
 
         //a data structure to hold the different assay types found when iterating over the sdrf assay sheet
         List<Assay> assaysFromGivenSDRF = new ArrayList<Assay>();
@@ -770,17 +680,49 @@ public class MAGETabSDRFLoader {
             }
         }
 
+        
+        List<AssayType> assayTypes = assayTTMT;
+
+        for (int i =0 ; i<assayTTMT.size(); i++) {
+            System.out.println("ZIS IS ZE CONTENT: " +  assayTTMT.get(i).getMeasurement() + " - " +  assayTTMT.get(i).getTechnology());
+        }
+
         for (int rowIndex = 1; rowIndex < sdrfAssayTableAsInput.size(); rowIndex++) {
 
             String[] thisAssayRecord = sdrfAssayTableAsInput.get(rowIndex);
             String arrayAsString = getArrayAsString(thisAssayRecord);
 
-            if (arrayAsString.contains("ChIP-Seq")) {
+
+            
+            
+                //TODO: implement an method to iterate over all
+            if  (
+                    (assayTTMT.get(0).getMeasurement().equals("protein-DNA binding site identification") &&  assayTTMT.get(0).getTechnology().contains("sequencing"))
+                    ||
+                            (assayTTMT.get(1).getMeasurement().equals("protein-DNA binding site identification") &&  assayTTMT.get(1).getTechnology().contains("sequencing"))
+                    ||
+                            (assayTTMT.get(2).getMeasurement().equals("protein-DNA binding site identification") &&  assayTTMT.get(2).getTechnology().contains("sequencing"))
+                            ||
+                            (assayTTMT.get(3).getMeasurement().equals("protein-DNA binding site identification") &&  assayTTMT.get(3).getTechnology().contains("sequencing"))
+                    ) {
+                System.out.println("REALLY? "+ arrayAsString );
+                if ( arrayAsString.contains("ChIP-Seq") || arrayAsString.contains("ChIPSeq") ) {
                 aTypeUnique.add("ChIP-Seq");
                 chipSeqRecords.add(thisAssayRecord);
+                }
+                if (arrayAsString.contains("Bisulfite-Seq") || arrayAsString.contains("MRE-Seq") ||
+                        arrayAsString.contains("MBD-Seq") || arrayAsString.contains("MeDIP-Seq ")) {
+                    aTypeUnique.add("ME-Seq");
+                    meSeqRecords.add(thisAssayRecord);
+                }
+               if (arrayAsString.contains("DNase-Hypersensitivity") ||  arrayAsString.contains("MNase-Seq")) {
+                    aTypeUnique.add("Chromatin-Seq");
+                    tfSeqRecords.add(thisAssayRecord);
+                }
             }
             //ConversionProperties.isValueInDesignTypes("ChIP-Seq") &&
-            if (arrayAsString.contains("genomic DNA")) {
+            //NOTE: this is potential problematic: solves issues with AE ChipSeq data but what happens with non chip seq application uisng genomic dna
+            if ( (arrayAsString.contains("genomic DNA") || arrayAsString.contains("genomic_DNA")) && !(arrayAsString.contains("MNase-Seq"))) {
                 aTypeUnique.add("ChIP-Seq");
                 chipSeqRecords.add(thisAssayRecord);
             }
@@ -792,16 +734,16 @@ public class MAGETabSDRFLoader {
                 aTypeUnique.add("transcription profiling by array");
                 genechipRecords.add(thisAssayRecord);
             }
-            if (arrayAsString.contains("Bisulfite-Seq") || arrayAsString.contains("MRE-Seq") ||
-                    arrayAsString.contains("MBD-Seq") || arrayAsString.contains("MeDIP-Seq ")) {
-                aTypeUnique.add("ME-Seq");
-                meSeqRecords.add(thisAssayRecord);
-            }
-            if (arrayAsString.contains("DNase-Hypersensitivity") ||
-                    arrayAsString.contains("MNase-Seq")) {
-                aTypeUnique.add("Chromatin-Seq");
-                tfSeqRecords.add(thisAssayRecord);
-            }
+//            else if (arrayAsString.contains("Bisulfite-Seq") || arrayAsString.contains("MRE-Seq") ||
+//                    arrayAsString.contains("MBD-Seq") || arrayAsString.contains("MeDIP-Seq ")) {
+//                aTypeUnique.add("ME-Seq");
+//                meSeqRecords.add(thisAssayRecord);
+//            }
+//             if (arrayAsString.contains("DNase-Hypersensitivity") ||
+//                    arrayAsString.contains("MNase-Seq")) {
+//                aTypeUnique.add("Chromatin-Seq");
+//                tfSeqRecords.add(thisAssayRecord);
+//            }
             if (isHybridizationAssay || arrayAsString.contains("Hybridization") || arrayAsString.contains("biotin")) {
                 aTypeUnique.add("Hybridization");
                 genechipRecords.add(thisAssayRecord);
@@ -812,7 +754,7 @@ public class MAGETabSDRFLoader {
             if (assaytype.contains("Hybridization") || assaytype.contains("transcription profiling by array")) {
                 addToAssays("genechip", assaysFromGivenSDRF, geneChipAssay, genechipRecords);
             }
-            if (assaytype.contains("ChIP-Seq")) {
+            if (assaytype.contains("ChIP-Seq")|| assaytype.contains("ChIPSeq")) {
                 addToAssays("ChIP-Seq", assaysFromGivenSDRF, chipSeqAssay, chipSeqRecords);
             }
             if (assaytype.contains("RNA-Seq")) {
