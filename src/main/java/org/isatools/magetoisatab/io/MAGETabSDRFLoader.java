@@ -79,7 +79,7 @@ public class MAGETabSDRFLoader {
 
             File file = new File(url);
 
-            if (file.exists()) {
+            if (file.exists() && !file.isDirectory()) {
 
 
                 Loader fileReader = new Loader();
@@ -204,7 +204,7 @@ public class MAGETabSDRFLoader {
                 for (Assay anAssaysFromThisSDRF : assaysFromThisSDRF) {
                     for (String key : anAssaysFromThisSDRF.getAssayLevelInformation().keySet()) {
                         List<String[]> assaySpreadsheet = anAssaysFromThisSDRF.getAssayLevelInformation().get(key);
-                        assaySpreadsheet = CleanupRunner.runSelected(assaySpreadsheet, new ColumnMoveUtil(),new ProtocolInsertionUtil());  // ,
+                        assaySpreadsheet = CleanupRunner.runSelected(assaySpreadsheet, new ColumnMoveUtil(), new ProtocolInsertionUtil());  // ,
                         PrintStream assayPs = new PrintStream(new File(DownloadUtils.CONVERTED_DIRECTORY + File.separator + accnum + "/a_" + accnum + "_" + key + "_assay.txt"));
                         for (String[] records : assaySpreadsheet) {
                             String newAssayRecord = "";
@@ -277,7 +277,8 @@ public class MAGETabSDRFLoader {
      * A Method of to process SRDF header
      * input is a SRDF file name
      * output is an list of fields, and an index where to split the SDRF
-     *  @return a pair of integers indicating the position of the first Material Node and its depth
+     *
+     * @return a pair of integers indicating the position of the first Material Node and its depth
      */
     public Pair<Integer, Integer> processSdrfHeaderRow(String[] headerRow) {
 
@@ -350,8 +351,8 @@ public class MAGETabSDRFLoader {
                             break;   // we have found a Sample Name field, we can leave (but we need to handle the case where no such header is present...
                         }
                     }
-               }
-           } else {
+                }
+            } else {
 
                 for (int i = 0; i < headerRow.length; i++) {
 
@@ -628,7 +629,7 @@ public class MAGETabSDRFLoader {
                     sampleRecord.add(sdrfColumnIndex, sdrfRecord[sdrfColumnIndex]);
                 } else if (sdrfColumnIndex == firstAssayNodeIndex) {
                     sampleRecord.add(sdrfColumnIndex, sdrfRecord[sdrfColumnIndex]);
-                    offset = secondIndexNodeDepth -1;
+                    offset = secondIndexNodeDepth - 1;
                     for (int insertionCount = 0; insertionCount < secondIndexNodeDepth; insertionCount++) {
                         assayRecord.add((sdrfColumnIndex - firstAssayNodeIndex) + insertionCount, sdrfRecord[sdrfColumnIndex]);
                     }
@@ -652,123 +653,111 @@ public class MAGETabSDRFLoader {
         //a data structure to hold the different assay types found when iterating over the sdrf assay sheet
         List<Assay> assaysFromGivenSDRF = new ArrayList<Assay>();
 
-        Assay chipSeqAssay = new Assay();
-        Assay geneChipAssay = new Assay();
-        Assay meSeqAssay = new Assay();
-        Assay TFSeqAssay = new Assay();
-        Assay rnaSeqAssay = new Assay();
+        if (sdrfAssayTableAsInput.size() > 0) {
 
-        List<String[]> chipSeqRecords = new ArrayList<String[]>();
-        chipSeqRecords.add(sdrfAssayTableAsInput.get(0));
-        List<String[]> rnaSeqRecords = new ArrayList<String[]>();
-        rnaSeqRecords.add(sdrfAssayTableAsInput.get(0));
-        List<String[]> meSeqRecords = new ArrayList<String[]>();
-        meSeqRecords.add(sdrfAssayTableAsInput.get(0));
-        List<String[]> tfSeqRecords = new ArrayList<String[]>();
-        tfSeqRecords.add(sdrfAssayTableAsInput.get(0));
-        List<String[]> genechipRecords = new ArrayList<String[]>();
-        genechipRecords.add(sdrfAssayTableAsInput.get(0));
+            Assay chipSeqAssay = new Assay();
+            Assay geneChipAssay = new Assay();
+            Assay meSeqAssay = new Assay();
+            Assay TFSeqAssay = new Assay();
+            Assay rnaSeqAssay = new Assay();
 
-        Set<String> aTypeUnique = new HashSet<String>();
-
-        String[] columnHeaders = sdrfAssayTableAsInput.get(0);
-
-        boolean isHybridizationAssay = false;
-        for (String columnHeader : columnHeaders) {
-            if (columnHeader.contains("Hybridization")) {
-                isHybridizationAssay = true;
-            }
-        }
-
-        
-        List<AssayType> assayTypes = assayTTMT;
-
-        for (int i =0 ; i<assayTTMT.size(); i++) {
-            System.out.println("ZIS IS ZE CONTENT: " +  assayTTMT.get(i).getMeasurement() + " - " +  assayTTMT.get(i).getTechnology());
-        }
-
-        for (int rowIndex = 1; rowIndex < sdrfAssayTableAsInput.size(); rowIndex++) {
-
-            String[] thisAssayRecord = sdrfAssayTableAsInput.get(rowIndex);
-            String arrayAsString = getArrayAsString(thisAssayRecord);
+            List<String[]> chipSeqRecords = new ArrayList<String[]>();
+            List<String[]> rnaSeqRecords = new ArrayList<String[]>();
+            List<String[]> meSeqRecords = new ArrayList<String[]>();
+            List<String[]> tfSeqRecords = new ArrayList<String[]>();
+            List<String[]> genechipRecords = new ArrayList<String[]>();
 
 
-            
-            
-                //TODO: implement an method to iterate over all
-            if  (
-                    (assayTTMT.get(0).getMeasurement().equals("protein-DNA binding site identification") &&  assayTTMT.get(0).getTechnology().contains("sequencing"))
-                    ||
-                            (assayTTMT.get(1).getMeasurement().equals("protein-DNA binding site identification") &&  assayTTMT.get(1).getTechnology().contains("sequencing"))
-                    ||
-                            (assayTTMT.get(2).getMeasurement().equals("protein-DNA binding site identification") &&  assayTTMT.get(2).getTechnology().contains("sequencing"))
-                            ||
-                            (assayTTMT.get(3).getMeasurement().equals("protein-DNA binding site identification") &&  assayTTMT.get(3).getTechnology().contains("sequencing"))
-                    ) {
-                System.out.println("REALLY? "+ arrayAsString );
-                if ( arrayAsString.contains("ChIP-Seq") || arrayAsString.contains("ChIPSeq") ) {
-                aTypeUnique.add("ChIP-Seq");
-                chipSeqRecords.add(thisAssayRecord);
-                }
-                if (arrayAsString.contains("Bisulfite-Seq") || arrayAsString.contains("MRE-Seq") ||
-                        arrayAsString.contains("MBD-Seq") || arrayAsString.contains("MeDIP-Seq ")) {
-                    aTypeUnique.add("ME-Seq");
-                    meSeqRecords.add(thisAssayRecord);
-                }
-               if (arrayAsString.contains("DNase-Hypersensitivity") ||  arrayAsString.contains("MNase-Seq")) {
-                    aTypeUnique.add("Chromatin-Seq");
-                    tfSeqRecords.add(thisAssayRecord);
+            chipSeqRecords.add(sdrfAssayTableAsInput.get(0));
+            rnaSeqRecords.add(sdrfAssayTableAsInput.get(0));
+            meSeqRecords.add(sdrfAssayTableAsInput.get(0));
+            tfSeqRecords.add(sdrfAssayTableAsInput.get(0));
+            genechipRecords.add(sdrfAssayTableAsInput.get(0));
+
+
+            Set<String> aTypeUnique = new HashSet<String>();
+
+            String[] columnHeaders = sdrfAssayTableAsInput.get(0);
+
+
+            boolean isHybridizationAssay = false;
+            for (String columnHeader : columnHeaders) {
+                if (columnHeader.contains("Hybridization")) {
+                    isHybridizationAssay = true;
                 }
             }
-            //ConversionProperties.isValueInDesignTypes("ChIP-Seq") &&
-            //NOTE: this is potential problematic: solves issues with AE ChipSeq data but what happens with non chip seq application uisng genomic dna
-            if ( (arrayAsString.contains("genomic DNA") || arrayAsString.contains("genomic_DNA")) && !(arrayAsString.contains("MNase-Seq"))) {
-                aTypeUnique.add("ChIP-Seq");
-                chipSeqRecords.add(thisAssayRecord);
-            }
-            if (arrayAsString.contains("RNA-Seq")) {
-                aTypeUnique.add("RNA-Seq");
-                rnaSeqRecords.add(thisAssayRecord);
-            }
-            if (ConversionProperties.isValueInDesignTypes("dye_swap_design")) {
-                aTypeUnique.add("transcription profiling by array");
-                genechipRecords.add(thisAssayRecord);
-            }
-//            else if (arrayAsString.contains("Bisulfite-Seq") || arrayAsString.contains("MRE-Seq") ||
-//                    arrayAsString.contains("MBD-Seq") || arrayAsString.contains("MeDIP-Seq ")) {
-//                aTypeUnique.add("ME-Seq");
-//                meSeqRecords.add(thisAssayRecord);
-//            }
-//             if (arrayAsString.contains("DNase-Hypersensitivity") ||
-//                    arrayAsString.contains("MNase-Seq")) {
-//                aTypeUnique.add("Chromatin-Seq");
-//                tfSeqRecords.add(thisAssayRecord);
-//            }
-            if (isHybridizationAssay || arrayAsString.contains("Hybridization") || arrayAsString.contains("biotin")) {
-                aTypeUnique.add("Hybridization");
-                genechipRecords.add(thisAssayRecord);
-            }
-        }
 
-        for (String assaytype : aTypeUnique) {
-            if (assaytype.contains("Hybridization") || assaytype.contains("transcription profiling by array")) {
-                addToAssays("genechip", assaysFromGivenSDRF, geneChipAssay, genechipRecords);
+            for (int rowIndex = 1; rowIndex < sdrfAssayTableAsInput.size(); rowIndex++) {
+
+                String[] thisAssayRecord = sdrfAssayTableAsInput.get(rowIndex);
+                String arrayAsString = getArrayAsString(thisAssayRecord);
+
+                if (haveSequencingAssay(assayTTMT)) {
+
+                    if (arrayAsString.contains("ChIP-Seq") || arrayAsString.contains("ChIPSeq")) {
+                        aTypeUnique.add("ChIP-Seq");
+                        chipSeqRecords.add(thisAssayRecord);
+                    }
+                    if (arrayAsString.contains("Bisulfite-Seq") || arrayAsString.contains("MRE-Seq") ||
+                            arrayAsString.contains("MBD-Seq") || arrayAsString.contains("MeDIP-Seq ")) {
+                        aTypeUnique.add("ME-Seq");
+                        meSeqRecords.add(thisAssayRecord);
+                    }
+                    if (arrayAsString.contains("DNase-Hypersensitivity") || arrayAsString.contains("MNase-Seq")) {
+                        aTypeUnique.add("Chromatin-Seq");
+                        tfSeqRecords.add(thisAssayRecord);
+                    }
+                }
+                //ConversionProperties.isValueInDesignTypes("ChIP-Seq") &&
+                //NOTE: this is potential problematic: solves issues with AE ChipSeq data but what happens with non chip seq application uisng genomic dna
+                if ((arrayAsString.contains("genomic DNA") || arrayAsString.contains("genomic_DNA")) && !(arrayAsString.contains("MNase-Seq"))) {
+                    aTypeUnique.add("ChIP-Seq");
+                    chipSeqRecords.add(thisAssayRecord);
+                }
+                if (arrayAsString.contains("RNA-Seq")) {
+                    aTypeUnique.add("RNA-Seq");
+                    rnaSeqRecords.add(thisAssayRecord);
+                }
+                if (ConversionProperties.isValueInDesignTypes("dye_swap_design")) {
+                    aTypeUnique.add("transcription profiling by array");
+                    genechipRecords.add(thisAssayRecord);
+                }
+                if (isHybridizationAssay || arrayAsString.contains("Hybridization") || arrayAsString.contains("biotin")) {
+                    aTypeUnique.add("Hybridization");
+                    genechipRecords.add(thisAssayRecord);
+                }
             }
-            if (assaytype.contains("ChIP-Seq")|| assaytype.contains("ChIPSeq")) {
-                addToAssays("ChIP-Seq", assaysFromGivenSDRF, chipSeqAssay, chipSeqRecords);
-            }
-            if (assaytype.contains("RNA-Seq")) {
-                addToAssays("RNA-Seq", assaysFromGivenSDRF, rnaSeqAssay, rnaSeqRecords);
-            }
-            if (assaytype.contains("ME-Seq")) {
-                addToAssays("ME-Seq", assaysFromGivenSDRF, meSeqAssay, meSeqRecords);
-            }
-            if (assaytype.contains("Chromatin-Seq")) {
-                addToAssays("Chromatin-Seq", assaysFromGivenSDRF, TFSeqAssay, tfSeqRecords);
+
+            for (String assaytype : aTypeUnique) {
+                if (assaytype.contains("Hybridization") || assaytype.contains("transcription profiling by array")) {
+                    addToAssays("genechip", assaysFromGivenSDRF, geneChipAssay, genechipRecords);
+                }
+                if (assaytype.contains("ChIP-Seq") || assaytype.contains("ChIPSeq")) {
+                    addToAssays("ChIP-Seq", assaysFromGivenSDRF, chipSeqAssay, chipSeqRecords);
+                }
+                if (assaytype.contains("RNA-Seq")) {
+                    addToAssays("RNA-Seq", assaysFromGivenSDRF, rnaSeqAssay, rnaSeqRecords);
+                }
+                if (assaytype.contains("ME-Seq")) {
+                    addToAssays("ME-Seq", assaysFromGivenSDRF, meSeqAssay, meSeqRecords);
+                }
+                if (assaytype.contains("Chromatin-Seq")) {
+                    addToAssays("Chromatin-Seq", assaysFromGivenSDRF, TFSeqAssay, tfSeqRecords);
+                }
             }
         }
 
         return new ArrayList<Assay>(assaysFromGivenSDRF);
+    }
+
+    private boolean haveSequencingAssay(List<AssayType> assayTTMT) {
+        for (AssayType assay : assayTTMT) {
+            if (assay.getMeasurement().equals("protein-DNA binding site identification") && assayTTMT.get(0).getTechnology().contains("sequencing")) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
 

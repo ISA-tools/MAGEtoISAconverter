@@ -6,7 +6,7 @@
 
     <groupId>org.isatools</groupId>
     <artifactId>MAGEToISATabConverter</artifactId>
-    <version>0.2</version>
+    <version>0.3</version>
     <name>MAGEToISATabConverter</name>
     <url>http://www.isa-tools.org</url>
 
