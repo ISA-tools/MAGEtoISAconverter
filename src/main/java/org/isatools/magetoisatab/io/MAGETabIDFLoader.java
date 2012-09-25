@@ -139,11 +139,11 @@ public class MAGETabIDFLoader {
     }
 
 
-    public void  loadidfTab(String url, String accnum) throws IOException {
+    public void loadidfTab(String url, String accnum) throws IOException {
 
         try {
             populateIDF();
-            String[] sdrfDownloadLocation = {"", "", ""};
+            List<String> sdrfDownloadLocation = new ArrayList<String>();
             File file = new File(url);
 
             boolean success = (new File(DownloadUtils.CONVERTED_DIRECTORY + File.separator + accnum)).mkdirs();
@@ -227,7 +227,7 @@ public class MAGETabIDFLoader {
                 for (String factorLine : factorLines) {
                     //this is to take care of unsupported commonly used characters and match the replacements performed
                     //in the MAGETabSDRFloader to match declared and used factors.
-                    factorLine=factorLine.replace(". #"," number");
+                    factorLine = factorLine.replace(". #", " number");
                     invPs.println(factorLine);
                 }
 
@@ -298,7 +298,7 @@ public class MAGETabIDFLoader {
 
                     for (String cmtDesignType : ConversionProperties.getDesignTypes()) { //we start at 1 as the first element of the array is the header "
 
-                        if (ConversionProperties.isValueInDesignTypes("chip-seq")||ConversionProperties.isValueInDesignTypes("ChIP-seq")) {
+                        if (ConversionProperties.isValueInDesignTypes("chip-seq") || ConversionProperties.isValueInDesignTypes("ChIP-seq")) {
 
                             for (AssayType anAssayTTMT : assayTTMT) {
                                 if ((anAssayTTMT.getMeasurement().equalsIgnoreCase("protein-DNA binding site identification")) &&
@@ -341,8 +341,7 @@ public class MAGETabIDFLoader {
                         if (protocolLine.contains("Name") && technologyTypes.contains("sequencing")) {
                             isaProtocolSection.put(0, investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION).get(0).concat("\tlibrary construction\tnucleic acid sequencing"));
 
-                        }
-                        else if (protocolLine.contains("Name"))  {
+                        } else if (protocolLine.contains("Name")) {
                             isaProtocolSection.put(0, protocolLine);
 
                         }
@@ -350,9 +349,9 @@ public class MAGETabIDFLoader {
                         if (protocolLine.contains("Type") && technologyTypes.contains("sequencing")) {
                             System.out.println("protocol line: " + protocolLine);
                             String tempProtocolType = protocolLine.concat("\tlibrary construction\tnucleic acid sequencing");
-                            isaProtocolSection.put(1,tempProtocolType);
+                            isaProtocolSection.put(1, tempProtocolType);
 
-                            System.out.println("modified protocol line: " +  tempProtocolType);
+                            System.out.println("modified protocol line: " + tempProtocolType);
                         } else if (protocolLine.contains("Type")) {
                             isaProtocolSection.put(1, protocolLine);
                         }
@@ -443,29 +442,31 @@ public class MAGETabIDFLoader {
                         //we start at 1 as the first element of the sdrfFilenames array corresponds to the ISA Study File Name tag
                         for (int counter = 0; counter < sdrfFileNames.length; counter++) {
 
-                            System.out.println("SDRF number " + counter + " is:" + sdrfDownloadLocation[counter]);
+                            System.out.println("SDRF number " + counter + " is:" + sdrfDownloadLocation.get(counter));
 
                             MAGETabSDRFLoader sdrfloader = new MAGETabSDRFLoader();
 
-                            Study study = sdrfloader.loadsdrfTab(sdrfDownloadLocation[counter], accnum, assayTTMT);
+                            Study study = sdrfloader.loadsdrfTab(sdrfDownloadLocation.get(counter), accnum, assayTTMT);
 
                             Map<String, List<String>> table = new LinkedHashMap<String, List<String>>();
 
-                            for (int i = 0; i < study.getStudySampleLevelInformation().get(0).length; i++) {
+                            if (study.getStudySampleLevelInformation().size() > 0) {
+                                for (int i = 0; i < study.getStudySampleLevelInformation().get(0).length; i++) {
 
-                                String key = study.getStudySampleLevelInformation().get(0)[i];
+                                    String key = study.getStudySampleLevelInformation().get(0)[i];
 
-                                List<String> values = new ArrayList<String>();
+                                    List<String> values = new ArrayList<String>();
 
-                                for (int k = 1; k < study.getStudySampleLevelInformation().size(); k++) {
-                                    String value = study.getStudySampleLevelInformation().get(k)[i];
-                                    if (value != null) {
-                                        values.add(value);
+                                    for (int k = 1; k < study.getStudySampleLevelInformation().size(); k++) {
+                                        String value = study.getStudySampleLevelInformation().get(k)[i];
+                                        if (value != null) {
+                                            values.add(value);
+                                        }
                                     }
+
+                                    table.put(key, values);
+
                                 }
-
-                                table.put(key, values);
-
                             }
 
                             studies.add(table);
@@ -541,7 +542,7 @@ public class MAGETabIDFLoader {
 
     }
 
-    private void processIncomingIDFFile(String accnum, String[] sdrfDownloadLocation, File file) throws IOException {
+    private void processIncomingIDFFile(String accnum, List<String> sdrfDownloadLocation, File file) throws IOException {
         CSVReader reader = new CSVReader(new FileReader(file), '\t');
         String[] nextLine;
         while ((nextLine = reader.readNext()) != null) {
@@ -619,9 +620,7 @@ public class MAGETabIDFLoader {
 
                 System.out.println("Alternative Design Tag found at: " + rowName);
 
-                String[] designTypes = nextLine;
-
-                for (String designType : designTypes) {
+                for (String designType : nextLine) {
                     ConversionProperties.addDesignType(designType);
                 }
 
@@ -636,10 +635,11 @@ public class MAGETabIDFLoader {
                 System.out.println("number of SDRF files: " + (sdrfFileNames.length));
 
                 //There is more than one SDRF file listed in this submission, now iterating through them:");
-                for (int sdrfFileIndex = 0; sdrfFileIndex < sdrfFileNames.length; sdrfFileIndex++) {
-                    String sdrfUrl = "http://www.ebi.ac.uk/arrayexpress/files/" + accnum + "/" + sdrfFileNames[sdrfFileIndex];
-                    sdrfDownloadLocation[sdrfFileIndex] = DownloadUtils.TMP_DIRECTORY + File.separator + accnum + File.separator + sdrfFileNames[sdrfFileIndex];
-                    DownloadUtils.downloadFile(sdrfUrl, sdrfDownloadLocation[sdrfFileIndex]);
+                for (String sdrfFileName : sdrfFileNames) {
+                    String sdrfUrl = "http://www.ebi.ac.uk/arrayexpress/files/" + accnum + "/" + sdrfFileName;
+                    String sdrfFile = DownloadUtils.TMP_DIRECTORY + File.separator + accnum + File.separator + sdrfFileName;
+                    sdrfDownloadLocation.add(sdrfFile);
+                    DownloadUtils.downloadFile(sdrfUrl, sdrfFile);
                     System.out.println("SDRF found and downloaded: " + sdrfUrl);
                 }
 
@@ -665,7 +665,7 @@ public class MAGETabIDFLoader {
 
                 String tempLine = "";
                 tempLine = removeDuplicates(arrayToString(nextLine));
-                             isaOntoSection.put(0, tempLine);
+                isaOntoSection.put(0, tempLine);
 
             } else if (rowName.startsWith("Term Source File")) {
 
@@ -692,6 +692,7 @@ public class MAGETabIDFLoader {
 
     /**
      * Will take an Array and produce the String equivalent and separated with a given separator
+     *
      * @param array - String array to be converted.
      * @return String representation of the array
      */
@@ -853,7 +854,7 @@ public class MAGETabIDFLoader {
             assayTypes.add(new AssayType("protein-DNA binding site identification", "nucleotide sequencing", "ChIP-Seq"));
             isaProtocolSection.put(0, investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION).get(0).concat("\tlibrary construction\tnucleic acid sequencing"));
             isaProtocolSection.put(1, investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION).get(1).concat("\tlibrary construction\tnucleic acid sequencing"));
-            System.out.println("PROTOCOL INSERTION: "+isaProtocolSection.put(0, investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION).get(0).concat("\tlibrary construction\tnucleic acid sequencing")));
+            System.out.println("PROTOCOL INSERTION: " + isaProtocolSection.put(0, investigationSections.get(InvestigationSections.STUDY_PROTOCOL_SECTION).get(0).concat("\tlibrary construction\tnucleic acid sequencing")));
         }
 
         return assayTypes;
