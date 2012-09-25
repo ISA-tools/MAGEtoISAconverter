@@ -66,4 +66,19 @@ public class AssayType {
     public void setFile(String file) {
         this.file = file;
     }
+
+    @Override
+    public String toString() {
+        return "AssayType{" +
+                "measurement='" + measurement + '\'' +
+                ", technology='" + technology + '\'' +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o.toString().equals(toString());
+    }
+
+
 }
