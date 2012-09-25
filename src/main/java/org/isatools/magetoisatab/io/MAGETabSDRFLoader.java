@@ -203,6 +203,9 @@ public class MAGETabSDRFLoader {
                 System.out.println("We have " + assaysFromThisSDRF.size() + " assays.");
                 for (Assay anAssaysFromThisSDRF : assaysFromThisSDRF) {
                     for (String key : anAssaysFromThisSDRF.getAssayLevelInformation().keySet()) {
+
+                        System.out.println("ASSAY KEY IS: " + key);
+
                         List<String[]> assaySpreadsheet = anAssaysFromThisSDRF.getAssayLevelInformation().get(key);
                         assaySpreadsheet = CleanupRunner.runSelected(assaySpreadsheet, new ColumnMoveUtil(), new ProtocolInsertionUtil());  // ,
                         PrintStream assayPs = new PrintStream(new File(DownloadUtils.CONVERTED_DIRECTORY + File.separator + accnum + "/a_" + accnum + "_" + key + "_assay.txt"));
@@ -656,6 +659,7 @@ public class MAGETabSDRFLoader {
         if (sdrfAssayTableAsInput.size() > 0) {
 
             Assay chipSeqAssay = new Assay();
+            Assay chipChipAssay = new Assay();
             Assay geneChipAssay = new Assay();
             Assay meSeqAssay = new Assay();
             Assay TFSeqAssay = new Assay();
@@ -666,6 +670,7 @@ public class MAGETabSDRFLoader {
             List<String[]> meSeqRecords = new ArrayList<String[]>();
             List<String[]> tfSeqRecords = new ArrayList<String[]>();
             List<String[]> genechipRecords = new ArrayList<String[]>();
+            List<String[]> chipchipRecords = new ArrayList<String[]>();
 
 
             chipSeqRecords.add(sdrfAssayTableAsInput.get(0));
@@ -673,6 +678,7 @@ public class MAGETabSDRFLoader {
             meSeqRecords.add(sdrfAssayTableAsInput.get(0));
             tfSeqRecords.add(sdrfAssayTableAsInput.get(0));
             genechipRecords.add(sdrfAssayTableAsInput.get(0));
+            chipchipRecords.add(sdrfAssayTableAsInput.get(0));
 
 
             Set<String> aTypeUnique = new HashSet<String>();
@@ -681,9 +687,13 @@ public class MAGETabSDRFLoader {
 
 
             boolean isHybridizationAssay = false;
+            boolean  containsAntibodyInHeader = false;
             for (String columnHeader : columnHeaders) {
                 if (columnHeader.contains("Hybridization")) {
                     isHybridizationAssay = true;
+                }
+                if (columnHeader.toLowerCase().contains("antibody")) {
+                    containsAntibodyInHeader = true;
                 }
             }
 
@@ -694,7 +704,7 @@ public class MAGETabSDRFLoader {
 
                 if (haveSequencingAssay(assayTTMT)) {
 
-                    if (arrayAsString.contains("ChIP-Seq") || arrayAsString.contains("ChIPSeq")) {
+                    if (!isHybridizationAssay && arrayAsString.contains("ChIP-Seq") || arrayAsString.contains("ChIPSeq")) {
                         aTypeUnique.add("ChIP-Seq");
                         chipSeqRecords.add(thisAssayRecord);
                     }
@@ -710,37 +720,41 @@ public class MAGETabSDRFLoader {
                 }
                 //ConversionProperties.isValueInDesignTypes("ChIP-Seq") &&
                 //NOTE: this is potential problematic: solves issues with AE ChipSeq data but what happens with non chip seq application uisng genomic dna
-                if ((arrayAsString.contains("genomic DNA") || arrayAsString.contains("genomic_DNA")) && !(arrayAsString.contains("MNase-Seq"))) {
+                if (!isHybridizationAssay && (arrayAsString.contains("genomic DNA") || arrayAsString.contains("genomic_DNA")) && !(arrayAsString.contains("MNase-Seq"))) {
                     aTypeUnique.add("ChIP-Seq");
                     chipSeqRecords.add(thisAssayRecord);
                 }
-                if (arrayAsString.contains("RNA-Seq")) {
-                    aTypeUnique.add("RNA-Seq");
-                    rnaSeqRecords.add(thisAssayRecord);
-                }
+//                if (arrayAsString.contains("RNA-Seq")) {
+//                    aTypeUnique.add("RNA-Seq");
+//                    rnaSeqRecords.add(thisAssayRecord);
+//                }
                 if (ConversionProperties.isValueInDesignTypes("dye_swap_design")) {
-                    aTypeUnique.add("transcription profiling by array");
+                    aTypeUnique.add("Hybridization");
                     genechipRecords.add(thisAssayRecord);
                 }
-                if (isHybridizationAssay || arrayAsString.contains("Hybridization") || arrayAsString.contains("biotin")) {
-                    aTypeUnique.add("Hybridization");
+                if (ConversionProperties.isValueInDesignTypes("ChIP-chip by tiling array")) {
+                    aTypeUnique.add("ChIP-chip by tiling array");
+                    chipchipRecords.add(thisAssayRecord);
+                }
+                if ( (isHybridizationAssay && !containsAntibodyInHeader)  && (arrayAsString.contains("RNA") || arrayAsString.contains("genomic DNA")) ) {
+                    aTypeUnique.add("transcription profiling by array");
                     genechipRecords.add(thisAssayRecord);
                 }
 
                 //ConversionProperties.isValueInDesignTypes("ChIP-Seq") &&
                 //NOTE: this is potential problematic: solves issues with AE ChipSeq data but what happens with non chip seq application uisng genomic dna
-                if ((arrayAsString.contains("genomic DNA") || arrayAsString.contains("genomic_DNA")) && !(arrayAsString.contains("MNase-Seq"))) {
+                if (!isHybridizationAssay && (arrayAsString.contains("genomic DNA") || arrayAsString.contains("genomic_DNA")) && (arrayAsString.contains("MNase-Seq"))) {
                     aTypeUnique.add("ChIP-Seq");
                     chipSeqRecords.add(thisAssayRecord);
                 }
-                if (arrayAsString.contains("RNA-Seq") || arrayAsString.contains("total RNA")) {
+                if (!isHybridizationAssay && (arrayAsString.contains("RNA-Seq") || arrayAsString.contains("total RNA"))) {
                     aTypeUnique.add("RNA-Seq");
                     rnaSeqRecords.add(thisAssayRecord);
                 }
-                if (ConversionProperties.isValueInDesignTypes("dye_swap_design")) {
-                    aTypeUnique.add("transcription profiling by array");
-                    genechipRecords.add(thisAssayRecord);
-                }
+//                if (ConversionProperties.isValueInDesignTypes("dye_swap_design")) {
+//                    aTypeUnique.add("transcription profiling by array");
+//                    genechipRecords.add(thisAssayRecord);
+//                }
 //            else if (arrayAsString.contains("Bisulfite-Seq") || arrayAsString.contains("MRE-Seq") ||
 //                    arrayAsString.contains("MBD-Seq") || arrayAsString.contains("MeDIP-Seq ")) {
 //                aTypeUnique.add("ME-Seq");
@@ -751,20 +765,20 @@ public class MAGETabSDRFLoader {
 //                aTypeUnique.add("Chromatin-Seq");
 //                tfSeqRecords.add(thisAssayRecord);
 //            }
-                if (isHybridizationAssay || arrayAsString.contains("Hybridization") || arrayAsString.contains("biotin")) {
-                    aTypeUnique.add("Hybridization");
-                    genechipRecords.add(thisAssayRecord);
+                if ( ( isHybridizationAssay  ) && containsAntibodyInHeader &&  ( arrayAsString.contains("genomic DNA") || arrayAsString.toLowerCase().contains("chip") )) {    //note: reference is used as a keyword in chip-seq/chip-chip experiment but this is not consistently done
+                    aTypeUnique.add("ChIP-chip");
+                    chipchipRecords.add(thisAssayRecord);
                 }
             }
 
 
             for (String assaytype : aTypeUnique) {
-                if (assaytype.contains("Hybridization") || assaytype.contains("transcription profiling by array")) {
-                    addToAssays("genechip", assaysFromGivenSDRF, geneChipAssay, genechipRecords);
+                if ( assaytype.contains("transcription profiling by array")) {   //assaytype.contains("Hybridization") ||
+                    addToAssays("GeneChip", assaysFromGivenSDRF, geneChipAssay, genechipRecords);
                 }
-                if (assaytype.contains("ChIP-Chip") || assaytype.contains("ChIP-chip")) {
-                    System.out.println("YAYYYA!!!!!!");
-                    addToAssays("ChIP-Chip", assaysFromGivenSDRF, geneChipAssay, genechipRecords);
+
+                if (assaytype.contains("ChIP-chip")) {
+                    addToAssays("ChIP-Chip", assaysFromGivenSDRF, chipChipAssay, chipchipRecords);
                 }
                 if (assaytype.contains("ChIP-Seq") || assaytype.contains("ChIPSeq")) {
                     addToAssays("ChIP-Seq", assaysFromGivenSDRF, chipSeqAssay, chipSeqRecords);
@@ -773,7 +787,7 @@ public class MAGETabSDRFLoader {
                     addToAssays("RNA-Seq", assaysFromGivenSDRF, rnaSeqAssay, rnaSeqRecords);
                 }
                 if (assaytype.contains("ME-Seq")) {
-                    addToAssays("ME-Seq", assaysFromGivenSDRF, meSeqAssay, meSeqRecords);
+                    addToAssays("ChIP-Seq", assaysFromGivenSDRF, meSeqAssay, meSeqRecords);
                 }
                 if (assaytype.contains("Chromatin-Seq")) {
                     addToAssays("Chromatin-Seq", assaysFromGivenSDRF, TFSeqAssay, tfSeqRecords);
