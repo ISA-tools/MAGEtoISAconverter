@@ -726,7 +726,7 @@ public class MAGETabSDRFLoader {
                 aTypeUnique.add("ChIP-Seq");
                 chipSeqRecords.add(thisAssayRecord);
             }
-            if (arrayAsString.contains("RNA-Seq")) {
+            if ( arrayAsString.contains("RNA-Seq") || arrayAsString.contains("total RNA") ) {
                 aTypeUnique.add("RNA-Seq");
                 rnaSeqRecords.add(thisAssayRecord);
             }
@@ -750,9 +750,14 @@ public class MAGETabSDRFLoader {
             }
         }
 
+
         for (String assaytype : aTypeUnique) {
-            if (assaytype.contains("Hybridization") || assaytype.contains("transcription profiling by array")) {
+            if ( assaytype.contains("transcription profiling by array")) {
                 addToAssays("genechip", assaysFromGivenSDRF, geneChipAssay, genechipRecords);
+            }
+            if ( assaytype.contains("ChIP-Chip") || assaytype.contains("ChIP-chip")) {
+                System.out.println("YAYYYA!!!!!!");
+                addToAssays("ChIP-Chip", assaysFromGivenSDRF, geneChipAssay, genechipRecords);
             }
             if (assaytype.contains("ChIP-Seq")|| assaytype.contains("ChIPSeq")) {
                 addToAssays("ChIP-Seq", assaysFromGivenSDRF, chipSeqAssay, chipSeqRecords);
@@ -761,7 +766,7 @@ public class MAGETabSDRFLoader {
                 addToAssays("RNA-Seq", assaysFromGivenSDRF, rnaSeqAssay, rnaSeqRecords);
             }
             if (assaytype.contains("ME-Seq")) {
-                addToAssays("ME-Seq", assaysFromGivenSDRF, meSeqAssay, meSeqRecords);
+                addToAssays("ChIP-Seq", assaysFromGivenSDRF, meSeqAssay, meSeqRecords);
             }
             if (assaytype.contains("Chromatin-Seq")) {
                 addToAssays("Chromatin-Seq", assaysFromGivenSDRF, TFSeqAssay, tfSeqRecords);
