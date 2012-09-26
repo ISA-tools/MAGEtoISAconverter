@@ -235,7 +235,6 @@ public class MAGETabIDFLoader {
                 //Now creating the Assay Section:
                 invPs.println("STUDY ASSAYS");
 
-
                 // We are now trying to get the Measurement and Technology Type from MAGE annotation Experimental Design Type
 
                 Set<AssayType> assayTTMT = getMeasurementAndTech(designLines.get(0));
@@ -347,7 +346,6 @@ public class MAGETabIDFLoader {
 
                         } else if (protocolLine.contains("Name")) {
                             isaProtocolSection.put(0, protocolLine);
-
                         }
 
                         if (protocolLine.contains("Type") && technologyTypes.contains("sequencing")) {
@@ -355,9 +353,9 @@ public class MAGETabIDFLoader {
                             String tempProtocolType = protocolLine.concat("\tlibrary construction\tnucleic acid sequencing");
                             isaProtocolSection.put(1, tempProtocolType);
 
-                            System.out.println("modified protocol line: " + tempProtocolType);
-                        } else if (protocolLine.contains("Type")) {
-                            isaProtocolSection.put(1, protocolLine);
+                            //System.out.println("modified protocol line: " + tempProtocolType);
+                        } else if (protocolLine.startsWith("Study Protocol Type")) {
+                             isaProtocolSection.put(1, protocolLine);
                         }
 
                         if (protocolLine.contains("Accession")) {
@@ -370,7 +368,7 @@ public class MAGETabIDFLoader {
                             isaProtocolSection.put(3, tempSource);
                         }
 
-                        if (protocolLine.contains("Description")) {
+                        if (protocolLine.contains("Protocol Description")) {
                             isaProtocolSection.put(4, protocolLine);
                         }
 
@@ -391,6 +389,7 @@ public class MAGETabIDFLoader {
 
                 //we now output the Protocol Section of an ISA Study
                 for (Map.Entry<Integer, String> e : isaProtocolSection.entrySet())
+
                     invPs.println(e.getValue());
 
 
