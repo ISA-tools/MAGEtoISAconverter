@@ -259,7 +259,8 @@ public class MAGETabIDFLoader {
 
                 for (AssayType anAssayTTMT1 : assayTTMT) {
                     //testing if it contains something meaningful!
-                    if ((anAssayTTMT1.getMeasurement() != "") || (anAssayTTMT1.getMeasurement() != null) || (anAssayTTMT1.getTechnology() != "") || (anAssayTTMT1.getTechnology() != null)) {
+                    if (!anAssayTTMT1.getMeasurement().equals("") || anAssayTTMT1.getMeasurement() != null
+                            || anAssayTTMT1.getTechnology().equals("") || anAssayTTMT1.getTechnology() != null) {
                         measurementTypes = measurementTypes + "\t" + anAssayTTMT1.getMeasurement();
                         technologyTypes = technologyTypes + "\t" + anAssayTTMT1.getTechnology();
                     }

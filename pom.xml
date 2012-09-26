@@ -78,6 +78,10 @@
     </build>
 
     <repositories>
+        <repository>
+            <id>oerc</id>
+            <url>http://frog.oerc.ox.ac.uk:8080/nexus-2.1.2/content/repositories/releases/</url>
+        </repository>
 
         <repository>
             <id>mvnrepository</id>
@@ -94,12 +98,6 @@
             <id>repo1</id>
             <url>http://repo1.maven.org/maven2/</url>
         </repository>
-
-        <repository>
-            <id>oerc</id>
-            <url>http://frog.oerc.ox.ac.uk:8080/artifactory/repo/</url>
-        </repository>
-
 
     </repositories>
 
@@ -136,11 +134,11 @@
             <version>4.01</version>
         </dependency>
 
-        <!--<dependency>-->
-            <!--<groupId>org.isatools</groupId>-->
-            <!--<artifactId>import_layer</artifactId>-->
-            <!--<version>1.5</version>-->
-        <!--</dependency>-->
+        <dependency>
+            <groupId>org.isatools</groupId>
+            <artifactId>import_layer</artifactId>
+            <version>1.5</version>
+        </dependency>
 
     </dependencies>
 
@@ -148,9 +146,7 @@
         <repository>
             <id>oerc-repo</id>
             <name>OeRC Maven repository</name>
-            <url>http://frog.oerc.ox.ac.uk:8080/artifactory/libs-release-local/</url>
+            <url>http://frog.oerc.ox.ac.uk:8080/nexus-2.1.2/content/repositories/releases</url>
         </repository>
     </distributionManagement>
-
-
 </project>
