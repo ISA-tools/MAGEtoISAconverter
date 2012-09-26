@@ -67,7 +67,7 @@ public class MAGETabSDRFLoader {
 
     }
 
-    public Study loadsdrfTab(String url, String accnum, List<AssayType> assayTTMT) throws IOException {
+    public Study loadsdrfTab(String url, String accnum, Set<AssayType> assayTTMT) throws IOException {
 
         List<String[]> studySamplesFromThisSDRF = new ArrayList<String[]>();
         List<Assay> assaysFromThisSDRF = new ArrayList<Assay>();
@@ -80,8 +80,6 @@ public class MAGETabSDRFLoader {
             File file = new File(url);
 
             if (file.exists() && !file.isDirectory()) {
-
-
                 Loader fileReader = new Loader();
                 List<String[]> sheetData = fileReader.loadSheet(url, FileType.TAB);
 
@@ -651,7 +649,7 @@ public class MAGETabSDRFLoader {
    in case SDRF contains more than one assay type.
    The method returns a HashMap where the key as assay type and the values are ArrayList of assay records.
     */
-    private List<Assay> inspectSdrfAssay(List<String[]> sdrfAssayTableAsInput, List<AssayType> assayTTMT) {
+    private List<Assay> inspectSdrfAssay(List<String[]> sdrfAssayTableAsInput, Set<AssayType> assayTTMT) {
 
         //a data structure to hold the different assay types found when iterating over the sdrf assay sheet
         List<Assay> assaysFromGivenSDRF = new ArrayList<Assay>();
@@ -800,9 +798,9 @@ public class MAGETabSDRFLoader {
     }
 
 
-    private boolean haveSequencingAssay(List<AssayType> assayTTMT) {
+    private boolean haveSequencingAssay(Set<AssayType> assayTTMT) {
         for (AssayType assay : assayTTMT) {
-            if (assay.getMeasurement().equals("protein-DNA binding site identification") && assayTTMT.get(0).getTechnology().contains("sequencing")) {
+            if (assay.getMeasurement().equals("protein-DNA binding site identification") && assay.getTechnology().contains("sequencing")) {
                 return true;
             }
         }

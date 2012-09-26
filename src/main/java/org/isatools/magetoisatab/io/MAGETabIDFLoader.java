@@ -1,6 +1,7 @@
 package org.isatools.magetoisatab.io;
 
 import au.com.bytecode.opencsv.CSVReader;
+import org.apache.commons.collections15.set.ListOrderedSet;
 import org.apache.log4j.Logger;
 import org.isatools.magetoisatab.io.model.AssayType;
 import org.isatools.magetoisatab.io.model.Study;
@@ -237,7 +238,7 @@ public class MAGETabIDFLoader {
 
                 // We are now trying to get the Measurement and Technology Type from MAGE annotation Experimental Design Type
 
-                List<AssayType> assayTTMT = getMeasurementAndTech(designLines.get(0));
+                Set<AssayType> assayTTMT = getMeasurementAndTech(designLines.get(0));
 
                 //trying to recover information about assay type in the absence of information in  Comment[AE..] and StudyDesign fields
                 for (String investigationLine : investigationLines) {
@@ -245,10 +246,13 @@ public class MAGETabIDFLoader {
                     if (investigationLine.contains("Study Title\tTranscription prof") || investigationLine.contains("Study Title\tGene expression prof")
                             || investigationLine.contains("Study Title\ttranscription prof") || investigationLine.contains("Study Title\tgene expression prof")) {
 
-                        System.out.println("BYE investigationLine = " + investigationLine);
+                        //System.out.println("BYE investigationLine = " + investigationLine);
                         //NOTE: we take a risk here by assuming that in the absence of information  in  Comment[AE..] and StudyDesign fields, finding 'Gene expression profiling or Transcription profiling in the title
                         // means it always uses microarrays.
-                        assayTTMT.add(new AssayType("transcription profiling", "DNA microarray", "GeneChip"));
+                        AssayType geneChip = new AssayType("transcription profiling", "DNA microarray", "GeneChip");
+                        if (!defaultAssayTypeAlreadyExists(geneChip, assayTTMT)) {
+                            assayTTMT.add(geneChip);
+                        }
                     }
                 }
 
@@ -284,7 +288,7 @@ public class MAGETabIDFLoader {
 
                 //case1: there is only SDRF and we rely on the information found under Comment[AEexperimentTypes]
                 //NOTE: caveat: AE is inconsistent and encode various measurement types under the same spreadsheet for sequencing applications
-                if (assayTTMT.size() > 0) {
+                if (assayTTMT.size() > 0 && sdrfFileNames != null) {
 
                     for (AssayType anAssayTTMT : assayTTMT) {       //we start at 1 as the first element of the array is the header "
                         assayfilenames = assayfilenames + "\ta_" + accnum + "_" + anAssayTTMT.getShortcut() + "_assay.txt";
@@ -423,7 +427,6 @@ public class MAGETabIDFLoader {
                             isaContactSection.put(7, contactLine);
                         }
                         if ((contactLine.contains("Roles") && !(contactLine.contains("Roles Term")))) {
-
                             isaContactSection.put(8, contactLine);
                         }
                     }
@@ -432,22 +435,21 @@ public class MAGETabIDFLoader {
                     for (Map.Entry<Integer, String> e : isaContactSection.entrySet())
                         invPs.println(e.getValue());
 
+                    List<Map<String, List<String>>> studies = new ArrayList<Map<String, List<String>>>();
+                    PrintUtils pu = new PrintUtils();
+
+                    // study sample file
+                    PrintStream ps = new PrintStream(new File(DownloadUtils.CONVERTED_DIRECTORY + File.separator + accnum + "/s_" + accnum + "_" + "study_samples.txt"));
+
+
                     for (String sdrfFile : sdrfFileNames) {
-                        System.out.println("Processing " + sdrfFile);
-                        PrintUtils pu = new PrintUtils();
-
-                        PrintStream ps = new PrintStream(new File(DownloadUtils.CONVERTED_DIRECTORY + File.separator + accnum + "/s_" + accnum + "_" + "study_samples.txt"));
-
-                        List<Map<String, List<String>>> studies = new ArrayList<Map<String, List<String>>>();
-
-                        //we start at 1 as the first element of the sdrfFilenames array corresponds to the ISA Study File Name tag
-                        for (int counter = 0; counter < sdrfFileNames.length; counter++) {
-
-                            System.out.println("SDRF number " + counter + " is:" + sdrfDownloadLocation.get(counter));
+                        if (!new File(sdrfFile).isDirectory()) {
+                            System.out.println("Processing " + sdrfFile);
+                            System.out.println("SDRF number is:" + sdrfFile);
 
                             MAGETabSDRFLoader sdrfloader = new MAGETabSDRFLoader();
 
-                            Study study = sdrfloader.loadsdrfTab(sdrfDownloadLocation.get(counter), accnum, assayTTMT);
+                            Study study = sdrfloader.loadsdrfTab(sdrfFile, accnum, assayTTMT);
 
                             Map<String, List<String>> table = new LinkedHashMap<String, List<String>>();
 
@@ -464,83 +466,101 @@ public class MAGETabIDFLoader {
                                             values.add(value);
                                         }
                                     }
-
                                     table.put(key, values);
-
                                 }
                             }
 
                             studies.add(table);
-
                             pu.printStudySamples(ps, study);
-
-                            ps.flush();
-                            ps.close();
                         }
-
-                        mergeTables(studies);
-
-                        //this set's keys are the final header of the merged study sample file
-                        Set<String> tableKeyset = mergeTables(studies).keySet();
-                        String finalStudyTableHeader = "";
-
-                        //we now splice the header together by concatenating the key
-                        for (String aTableKeyset : tableKeyset) {
-                            finalStudyTableHeader = finalStudyTableHeader + aTableKeyset + "\t";
-                        }
-                        //we print the header
-                        ps.println(finalStudyTableHeader);
-
-                        //we now need to get the total number of records. This corresponds to the number of elements in the arrays associated to the key "Sample Name"
-
-                        int numberOfSampleRecords;
-
-                        List<String> guestList = mergeTables(studies).get("Sample Name");
-
-                        numberOfSampleRecords = guestList.size();
-
-                        Set<String> finalStudyTable = new HashSet<String>();
-
-                        for (int sampleRecordIndex = 0; sampleRecordIndex < numberOfSampleRecords; sampleRecordIndex++) {
-
-                            String studyRecord = "";
-
-                            for (String key : mergeTables(studies).keySet()) {
-
-                                //obtain the list associated to that given key
-                                List<String> correspondingList = mergeTables(studies).get(key);
-
-                                // now obtain the ith element of that associated list
-                                if (sampleRecordIndex < correspondingList.size()) {
-                                    studyRecord += correspondingList.get(sampleRecordIndex) + "\t";
-                                }
-                            }
-
-                            finalStudyTable.add(studyRecord);
-                        }
-
-                        //Here we print the new records to the final study sample file
-                        for (String aFinalStudyTable : finalStudyTable) {
-                            ps.println(aFinalStudyTable);
-                        }
-
-                        //closing file handle
-                        ps.flush();
-                        ps.close();
                     }
+
+                    ps.flush();
+                    ps.close();
+
+                    Map<String, List<String>> mergedTables = mergeTables(studies);
+
+                    //this set's keys are the final header of the merged study sample file
+                    Set<String> tableKeyset = mergedTables.keySet();
+                    String finalStudyTableHeader = "";
+
+                    //we now splice the header together by concatenating the key
+                    for (String aTableKeyset : tableKeyset) {
+                        finalStudyTableHeader = finalStudyTableHeader + aTableKeyset + "\t";
+                    }
+                    //we print the header
+                    ps.println(finalStudyTableHeader);
+
+                    //we now need to get the total number of records. This corresponds to the number of elements in the arrays associated to the key "Sample Name"
+
+                    int numberOfSampleRecords;
+
+                    List<String> guestList = mergedTables.get("Sample Name");
+
+                    numberOfSampleRecords = guestList.size();
+
+                    Set<String> finalStudyTable = new HashSet<String>();
+
+                    for (int sampleRecordIndex = 0; sampleRecordIndex < numberOfSampleRecords; sampleRecordIndex++) {
+
+                        String studyRecord = "";
+
+                        for (String key : mergedTables.keySet()) {
+
+                            //obtain the list associated to that given key
+                            List<String> correspondingList = mergedTables.get(key);
+
+                            // now obtain the ith element of that associated list
+                            if (sampleRecordIndex < correspondingList.size()) {
+                                studyRecord += correspondingList.get(sampleRecordIndex) + "\t";
+                            }
+                        }
+
+                        finalStudyTable.add(studyRecord);
+                    }
+
+                    //Here we print the new records to the final study sample file
+                    for (String aFinalStudyTable : finalStudyTable) {
+                        ps.println(aFinalStudyTable);
+                    }
+
+                    //closing file handle
+                    ps.flush();
+                    ps.close();
                 }
+
             } else {
                 System.out.println("ERROR: File not found");
             }
+        } catch (
+                FileNotFoundException e
+                )
 
-        } catch (FileNotFoundException e) {
+        {
             e.printStackTrace();
-        } catch (IOException e) {
+        } catch (
+                IOException e
+                )
+
+        {
             e.printStackTrace();
-        } catch (Exception e) {
+        } catch (
+                Exception e
+                )
+
+        {
             e.printStackTrace();
         }
 
+    }
+
+    private boolean defaultAssayTypeAlreadyExists(AssayType geneChip, Set<AssayType> assayTTMT) {
+        for (AssayType assayType : assayTTMT) {
+            if (assayType.getTechnology().equals(geneChip.getTechnology()) && assayType.getMeasurement().equals(geneChip.getMeasurement())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void processIncomingIDFFile(String accnum, List<String> sdrfDownloadLocation, File file) throws IOException {
@@ -630,18 +650,30 @@ public class MAGETabIDFLoader {
 
             } else if (rowName.startsWith("SDRF File")) {
 
-                sdrfFileNames = new String[nextLine.length - 1];
-                System.arraycopy(nextLine, 1, sdrfFileNames, 0, nextLine.length - 1);
+
+                List<String> tmpSDRFFiles = new ArrayList<String>();
+
+                for (int sdrfLineValues = 1; sdrfLineValues < nextLine.length; sdrfLineValues++) {
+                    String nextSDRF = nextLine[sdrfLineValues];
+                    if (!nextSDRF.isEmpty()) {
+                        tmpSDRFFiles.add(nextSDRF);
+                    }
+                }
+
+                sdrfFileNames = tmpSDRFFiles.toArray(new String[tmpSDRFFiles.size()]);
 
                 System.out.println("number of SDRF files: " + (sdrfFileNames.length));
 
                 //There is more than one SDRF file listed in this submission, now iterating through them:");
+                int index = 0;
                 for (String sdrfFileName : sdrfFileNames) {
                     String sdrfUrl = "http://www.ebi.ac.uk/arrayexpress/files/" + accnum + "/" + sdrfFileName;
                     String sdrfFile = DownloadUtils.TMP_DIRECTORY + File.separator + accnum + File.separator + sdrfFileName;
+                    sdrfFileNames[index] = sdrfFile;
                     sdrfDownloadLocation.add(sdrfFile);
                     DownloadUtils.downloadFile(sdrfUrl, sdrfFile);
                     System.out.println("SDRF found and downloaded: " + sdrfUrl);
+                    index++;
                 }
 
                 if (assaylines == null) {
@@ -762,6 +794,9 @@ public class MAGETabIDFLoader {
         Set<String> allKeys = new LinkedHashSet<String>();
         Map<String, List<String>> resultMap = new LinkedHashMap<String, List<String>>();
 
+        System.out.println("Doing merge");
+        System.out.printf("Size of studies is: %d", studies.size());
+
         for (Map<String, List<String>> tables : studies) {
             allKeys.addAll(tables.keySet());
         }
@@ -818,11 +853,11 @@ public class MAGETabIDFLoader {
      * @return A Pair of Strings containing the Measurement and Technology Types to be output
      *         TODO: rely on an xml configuration file to instead of hard coded values -> easier to maintain in case of changes in ArrayExpress terminology
      */
-    private List<AssayType> getMeasurementAndTech(String line) {
+    private Set<AssayType> getMeasurementAndTech(String line) {
 
         // Line can contain multiple technologies. We must output them all as AssayTypes.
 
-        List<AssayType> assayTypes = new ArrayList<AssayType>();
+        Set<AssayType> assayTypes = new ListOrderedSet<AssayType>();
 
         if (line.matches("(?i).*ChIP-Chip.*")) {
             assayTypes.add(new AssayType("protein-DNA binding site identification", "DNA microarray", "ChIP-Chip"));
