@@ -480,8 +480,15 @@ public class MAGETabIDFLoader {
                     String finalStudyTableHeader = "";
 
                     //we now splice the header together by concatenating the key
+                    int keyCount=0;
                     for (String aTableKeyset : tableKeyset) {
+                      if (keyCount<tableKeyset.size()-1)   {
                         finalStudyTableHeader = finalStudyTableHeader + aTableKeyset + "\t";
+                      }
+                        else {
+                          finalStudyTableHeader = finalStudyTableHeader + aTableKeyset;
+                      }
+                        keyCount++;
                     }
                     //we print the header
                     System.out.println("PRINTING STUDY HEADER: " + finalStudyTableHeader);
@@ -501,15 +508,21 @@ public class MAGETabIDFLoader {
 
                         String studyRecord = "";
 
+                        int otherKeyCount=0;
+
                         for (String key : mergedTables.keySet()) {
 
                             //obtain the list associated to that given key
                             List<String> correspondingList = mergedTables.get(key);
-
+                            if (otherKeyCount<mergedTables.keySet().size()-1)   {
                             // now obtain the ith element of that associated list
-                            if (sampleRecordIndex < correspondingList.size()) {
-                                studyRecord += correspondingList.get(sampleRecordIndex) + "\t";
+                                if (sampleRecordIndex < correspondingList.size()) {
+                                    studyRecord += correspondingList.get(sampleRecordIndex) + "\t";
+                                }
+                            } else  {
+                                studyRecord += correspondingList.get(sampleRecordIndex);
                             }
+                            otherKeyCount++;
                         }
 
                         finalStudyTable.add(studyRecord);
