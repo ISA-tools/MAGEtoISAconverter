@@ -439,7 +439,6 @@ public class MAGETabIDFLoader {
                     // study sample file
                     PrintStream ps = new PrintStream(new File(DownloadUtils.CONVERTED_DIRECTORY + File.separator + accnum + "/s_" + accnum + "_" + "study_samples.txt"));
 
-
                     for (String sdrfFile : sdrfFileNames) {
                         if (!new File(sdrfFile).isDirectory()) {
                             System.out.println("Processing " + sdrfFile);
@@ -469,12 +468,9 @@ public class MAGETabIDFLoader {
                             }
 
                             studies.add(table);
-                            pu.printStudySamples(ps, study);
+                            //pu.printStudySamples(ps, study);
                         }
                     }
-
-                    ps.flush();
-                    ps.close();
 
                     Map<String, List<String>> mergedTables = mergeTables(studies);
 
@@ -487,6 +483,7 @@ public class MAGETabIDFLoader {
                         finalStudyTableHeader = finalStudyTableHeader + aTableKeyset + "\t";
                     }
                     //we print the header
+                    System.out.println("PRINTING STUDY HEADER: " + finalStudyTableHeader);
                     ps.println(finalStudyTableHeader);
 
                     //we now need to get the total number of records. This corresponds to the number of elements in the arrays associated to the key "Sample Name"
@@ -515,6 +512,7 @@ public class MAGETabIDFLoader {
                         }
 
                         finalStudyTable.add(studyRecord);
+
                     }
 
                     //Here we print the new records to the final study sample file
