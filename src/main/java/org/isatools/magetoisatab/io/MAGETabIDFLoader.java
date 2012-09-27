@@ -235,7 +235,6 @@ public class MAGETabIDFLoader {
                 //Now creating the Assay Section:
                 invPs.println("STUDY ASSAYS");
 
-
                 // We are now trying to get the Measurement and Technology Type from MAGE annotation Experimental Design Type
 
                 Set<AssayType> assayTTMT = getMeasurementAndTech(designLines.get(0));
@@ -348,7 +347,6 @@ public class MAGETabIDFLoader {
 
                         } else if (protocolLine.contains("Name")) {
                             isaProtocolSection.put(0, protocolLine);
-
                         }
 
                         if (protocolLine.contains("Type") && technologyTypes.contains("sequencing")) {
@@ -356,9 +354,9 @@ public class MAGETabIDFLoader {
                             String tempProtocolType = protocolLine.concat("\tlibrary construction\tnucleic acid sequencing");
                             isaProtocolSection.put(1, tempProtocolType);
 
-                            System.out.println("modified protocol line: " + tempProtocolType);
-                        } else if (protocolLine.contains("Type")) {
-                            isaProtocolSection.put(1, protocolLine);
+                            //System.out.println("modified protocol line: " + tempProtocolType);
+                        } else if (protocolLine.startsWith("Study Protocol Type")) {
+                             isaProtocolSection.put(1, protocolLine);
                         }
 
                         if (protocolLine.contains("Accession")) {
@@ -371,7 +369,7 @@ public class MAGETabIDFLoader {
                             isaProtocolSection.put(3, tempSource);
                         }
 
-                        if (protocolLine.contains("Description")) {
+                        if (protocolLine.contains("Protocol Description")) {
                             isaProtocolSection.put(4, protocolLine);
                         }
 
@@ -392,6 +390,7 @@ public class MAGETabIDFLoader {
 
                 //we now output the Protocol Section of an ISA Study
                 for (Map.Entry<Integer, String> e : isaProtocolSection.entrySet())
+
                     invPs.println(e.getValue());
 
 
@@ -441,7 +440,6 @@ public class MAGETabIDFLoader {
                     // study sample file
                     PrintStream ps = new PrintStream(new File(DownloadUtils.CONVERTED_DIRECTORY + File.separator + accnum + "/s_" + accnum + "_" + "study_samples.txt"));
 
-
                     for (String sdrfFile : sdrfFileNames) {
                         if (!new File(sdrfFile).isDirectory()) {
                             System.out.println("Processing " + sdrfFile);
@@ -471,12 +469,9 @@ public class MAGETabIDFLoader {
                             }
 
                             studies.add(table);
-                            pu.printStudySamples(ps, study);
+                            //pu.printStudySamples(ps, study);
                         }
                     }
-
-                    ps.flush();
-                    ps.close();
 
                     Map<String, List<String>> mergedTables = mergeTables(studies);
 
@@ -489,6 +484,7 @@ public class MAGETabIDFLoader {
                         finalStudyTableHeader = finalStudyTableHeader + aTableKeyset + "\t";
                     }
                     //we print the header
+                    System.out.println("PRINTING STUDY HEADER: " + finalStudyTableHeader);
                     ps.println(finalStudyTableHeader);
 
                     //we now need to get the total number of records. This corresponds to the number of elements in the arrays associated to the key "Sample Name"
@@ -517,6 +513,7 @@ public class MAGETabIDFLoader {
                         }
 
                         finalStudyTable.add(studyRecord);
+
                     }
 
                     //Here we print the new records to the final study sample file
