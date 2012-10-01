@@ -6,7 +6,7 @@
 
     <groupId>org.isatools</groupId>
     <artifactId>MAGEToISATabConverter</artifactId>
-    <version>0.3</version>
+    <version>1.0</version>
     <name>MAGEToISATabConverter</name>
     <url>http://www.isa-tools.org</url>
 
@@ -80,7 +80,7 @@
     <repositories>
         <repository>
             <id>oerc</id>
-            <url>http://frog.oerc.ox.ac.uk:8080/nexus-2.1.2/content/repositories/releases/</url>
+            <url>http://frog.oerc.ox.ac.uk:8080/nexus-2.1.2/content/groups/oerc</url>
         </repository>
 
         <repository>
@@ -125,7 +125,7 @@
         <dependency>
             <groupId>uk.ac.ebi</groupId>
             <artifactId>jutils</artifactId>
-            <version>1.2</version>
+            <version>1.4</version>
         </dependency>
 
         <dependency>
@@ -134,11 +134,11 @@
             <version>4.01</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.isatools</groupId>
-            <artifactId>import_layer</artifactId>
-            <version>1.5</version>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>org.isatools</groupId>-->
+            <!--<artifactId>import_layer</artifactId>-->
+            <!--<version>1.6-SNAPSHOT</version>-->
+        <!--</dependency>-->
 
     </dependencies>
 

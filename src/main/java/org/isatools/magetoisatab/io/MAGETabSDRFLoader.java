@@ -2,7 +2,6 @@ package org.isatools.magetoisatab.io;
 
 //TODO: propagate  factor values and cleanup
 
-import com.sun.tools.javac.util.Pair;
 import org.isatools.io.FileType;
 import org.isatools.io.Loader;
 import org.isatools.magetoisatab.io.fileprocessing.CleanupRunner;
@@ -15,6 +14,7 @@ import org.isatools.magetoisatab.utils.Column;
 import org.isatools.magetoisatab.utils.ConversionProperties;
 import org.isatools.magetoisatab.utils.Utils;
 import org.isatools.manipulator.SpreadsheetManipulation;
+import uk.ac.ebi.utils.collections.Pair;
 
 import java.io.File;
 import java.io.FileNotFoundException;
